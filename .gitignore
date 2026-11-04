@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+
+# Secretos y configuración local
+.env
+.env.*
+!.env.example
+
+# Node / Angular
+node_modules/
+dist/
+.angular/
+
+# Editor / sistema
+.vscode/
+.idea/
+.DS_Store
