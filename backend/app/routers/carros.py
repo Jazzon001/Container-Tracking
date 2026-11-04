@@ -5,17 +5,15 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import Carro
-from app.schemas import CarroCreate, CarroOut
+from app.schemas import CargaCarro, CarroCreate, CarroOut
+from app.services import carros as servicio
 
 router = APIRouter(prefix="/carros", tags=["carros"])
 
 
 @router.post("", response_model=CarroOut, status_code=status.HTTP_201_CREATED)
 def crear_carro(datos: CarroCreate, db: Session = Depends(get_db)):
-    numero = datos.numero.strip()
-    if not numero:
-        raise HTTPException(422,"El número no puede estar vacío")
-    carro = Carro(numero=numero)
+    carro = Carro(numero=datos.numero)
     db.add(carro)
     try:
         db.commit()
@@ -32,7 +30,9 @@ def listar_carros(db: Session = Depends(get_db)):
 
 @router.get("/{carro_id}", response_model=CarroOut)
 def obtener_carro(carro_id: int, db: Session = Depends(get_db)):
-    carro = db.get(Carro, carro_id)
-    if carro is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Carro no encontrado")
-    return carro
+    return servicio.obtener_carro(db, carro_id)
+
+
+@router.post("/{carro_id}/carga", response_model=CarroOut)
+def cargar_carro(carro_id: int, datos: CargaCarro, db: Session = Depends(get_db)):
+    return servicio.cargar_carro(db, carro_id, datos.contenedor_elemento)
