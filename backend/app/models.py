@@ -22,3 +22,8 @@ class Carro(Base):
     estado: Mapped[EstadoCarro] = mapped_column(
         Enum(EstadoCarro), default=EstadoCarro.DISPONIBLE
     )
+    # Código de NOW del producto que lleva el carro. Es nulo si el carro va vacío.
+    # Único: un mismo contenedor elemento no puede estar en dos carros a la vez.
+    contenedor_elemento: Mapped[str | None] = mapped_column(
+        String(50), unique=True, default=None
+    )
