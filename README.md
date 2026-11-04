@@ -1,5 +1,96 @@
 # Container-Tracking
-Un sistema para poder dar trazabilidad a los carros que se mueven en la empresa y poder identificar los tiempos que permanece en cada proceso y por qué, además de poder manejar un inventario de carros disponibles.
 
-Código de verifiación:
-LEARN-CAP-5BC13866
+Sistema web para dar **trazabilidad a los carros** (contenedores de bobinas) que circulan entre los procesos de producción de hilo de poliéster de **UTEXA**, identificar cuánto tiempo permanece cada uno en cada proceso y por qué, y mantener un **inventario en tiempo real de los carros disponibles**.
+
+> **Código de verificación:** `LEARN-CAP-5BC13866`
+
+---
+
+## Contexto
+
+UTEXA fabrica hilo de poliéster en tres procesos de producción:
+
+- **POY**: produce hilo semiterminado, que es la materia prima de DTY.
+- **DTY**: consume el POY y produce hilo terminado.
+- **Twisting**: proceso de retorcido que recibe producto de DTY.
+
+El producto se traslada en **carros**: contenedores con **24 bobinas de máximo 15 kg** cada una. Existen alrededor de **386 carros**. Cada carro cargado se notifica al ERP **NOW**, que genera un código único llamado **contenedor elemento**.
+
+## Problema
+
+NOW deja de mostrar el carro cuando el producto se consume en DTY y asume que el carro ya está libre. En la práctica, DTY retiene muchos carros vacíos durante mucho tiempo. Cuando POY se queda sin carros, debe buscarlos de urgencia en DTY. Si no los encuentra, las bobinas se colocan en tarimas y se rompe el flujo normal de producción.
+
+NOW tampoco permite saber dónde está un carro vacío, desde cuándo, ni si está en mantenimiento.
+
+## Solución propuesta
+
+Un sistema **paralelo a NOW**, que no modifica los procesos de calidad ni de almacén, y que se compone de tres módulos.
+
+### 1. Control de carros en tiempo real
+
+- POY **escanea el código del contenedor elemento** al cargar un carro, y así se asocia carro ↔ contenedor elemento.
+- Cuando el carro regresa vacío, **almacén lo busca en el sistema y lo marca como entregado**. Entonces pasa al inventario de carros disponibles de POY.
+- POY consulta en tiempo real **cuántos carros tiene disponibles, cuáles no han regresado y desde hace cuánto tiempo**.
+
+### 2. Mantenimiento de carros
+
+- Registro de **fecha de entrada y de salida** de mantenimiento por carro.
+- Aplica a los carros de POY y a los carros propios de DTY.
+
+### 3. Reporte de tiempos por etapa
+
+- Se **sube un archivo Excel descargado de NOW**.
+- El sistema lo combina con los registros propios y entrega un reporte del **tiempo que cada contenedor elemento estuvo en cada proceso**, para detectar cuellos de botella.
+- Etapas de NOW que se pueden cruzar: notificado → liberado por calidad → transferido a custodia → salida de custodia / entrada a DTY.
+
+## Flujo de los carros
+
+| Origen | Destino | Estado del carro |
+|---|---|---|
+| POY | DTY | Con producto |
+| DTY | POY | Vacío |
+| DTY | Empaque / Twisting | Con producto (carros propios de DTY) |
+| Empaque / Twisting | DTY | Vacío |
+
+## Requisitos clave
+
+- **Captura de códigos** con lector de código de barras **y** escritura manual en el mismo campo.
+- **Responsive**: debe poder usarse desde el celular.
+- **Roles**: POY, Almacén, DTY, Twisting y Administrador, con permisos por rol.
+- **Concurrencia**: al menos 4 usuarios simultáneos, con validaciones para que un carro no se asigne dos veces a la vez.
+
+## Stack tecnológico
+
+| Capa | Tecnología |
+|---|---|
+| Frontend | Angular |
+| Backend | Python con FastAPI |
+| Pruebas | Pytest (backend) y pruebas de Angular (frontend) |
+| CI | GitHub Actions |
+
+## Estructura prevista del repositorio
+
+```
+Container-Tracking/
+├── backend/      # API FastAPI
+├── frontend/     # Aplicación Angular
+├── docs/         # Documentación y decisiones técnicas
+└── .github/
+    └── workflows/  # Integración continua
+```
+
+## Estado del proyecto
+
+En fase inicial: definición de alcance y lineamientos. Aún no hay código ejecutable. Las instrucciones de instalación y ejecución se agregarán cuando exista la primera versión del backend y del frontend.
+
+## Convenciones de trabajo
+
+- Commits con el formato **Conventional Commits** (`feat:`, `fix:`, `docs:`, `test:`, `chore:`).
+- Un commit por cambio lógico, trabajando en ramas por funcionalidad.
+- Las pruebas y el CI deben pasar antes de integrar cambios.
+
+## Cliente
+
+- **Empresa:** UTEXA
+- **Cliente directo:** William Castillo, ingeniero del sistema de gestión de calidad
+- **ERP de referencia:** NOW
