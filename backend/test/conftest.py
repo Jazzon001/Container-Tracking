@@ -34,3 +34,25 @@ def client():
     yield TestClient(app)
     app.dependency_overrides.clear()
     engine.dispose()
+
+
+@pytest.fixture
+def crear_carro(client):
+    """Crea un carro y devuelve su JSON."""
+
+    def _crear(numero="C-001"):
+        return client.post("/carros", json={"numero": numero}).json()
+
+    return _crear
+
+
+@pytest.fixture
+def cargar(client):
+    """Carga un carro con un contenedor elemento y devuelve la respuesta HTTP."""
+
+    def _cargar(carro_id, contenedor="100123"):
+        return client.post(
+            f"/carros/{carro_id}/carga", json={"contenedor_elemento": contenedor}
+        )
+
+    return _cargar
