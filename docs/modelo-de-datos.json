@@ -1,0 +1,80 @@
+{
+  "tablas": [
+    {
+      "nombre": "carros",
+      "columnas": [
+        {
+          "nombre": "id",
+          "tipo": "INTEGER",
+          "nulo": false,
+          "clave_primaria": true,
+          "unico": false,
+          "clave_foranea": []
+        },
+        {
+          "nombre": "numero",
+          "tipo": "VARCHAR(50)",
+          "nulo": false,
+          "clave_primaria": false,
+          "unico": true,
+          "clave_foranea": []
+        },
+        {
+          "nombre": "estado",
+          "tipo": "VARCHAR(16)",
+          "nulo": false,
+          "clave_primaria": false,
+          "unico": false,
+          "clave_foranea": []
+        },
+        {
+          "nombre": "contenedor_elemento",
+          "tipo": "VARCHAR(50)",
+          "nulo": true,
+          "clave_primaria": false,
+          "unico": true,
+          "clave_foranea": []
+        }
+      ]
+    },
+    {
+      "nombre": "mantenimientos",
+      "columnas": [
+        {
+          "nombre": "id",
+          "tipo": "INTEGER",
+          "nulo": false,
+          "clave_primaria": true,
+          "unico": false,
+          "clave_foranea": []
+        },
+        {
+          "nombre": "carro_id",
+          "tipo": "INTEGER",
+          "nulo": false,
+          "clave_primaria": false,
+          "unico": false,
+          "clave_foranea": [
+            "carros.id"
+          ]
+        },
+        {
+          "nombre": "fecha_entrada",
+          "tipo": "DATETIME",
+          "nulo": false,
+          "clave_primaria": false,
+          "unico": false,
+          "clave_foranea": []
+        },
+        {
+          "nombre": "fecha_salida",
+          "tipo": "DATETIME",
+          "nulo": true,
+          "clave_primaria": false,
+          "unico": false,
+          "clave_foranea": []
+        }
+      ]
+    }
+  ]
+}
