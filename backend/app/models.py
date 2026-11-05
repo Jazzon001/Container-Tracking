@@ -1,6 +1,7 @@
 import enum
+from datetime import datetime
 
-from sqlalchemy import Enum, String
+from sqlalchemy import DateTime, Enum, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -26,4 +27,17 @@ class Carro(Base):
     # Único: un mismo contenedor elemento no puede estar en dos carros a la vez.
     contenedor_elemento: Mapped[str | None] = mapped_column(
         String(50), unique=True, default=None
+    )
+
+
+class Mantenimiento(Base):
+    """Paso de un carro por mantenimiento. Mientras no tiene salida, sigue abierto."""
+
+    __tablename__ = "mantenimientos"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    carro_id: Mapped[int] = mapped_column(ForeignKey("carros.id"), index=True)
+    fecha_entrada: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    fecha_salida: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), default=None
     )
