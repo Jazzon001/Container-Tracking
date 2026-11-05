@@ -4,7 +4,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from app.database import Base, engine
-from app.routers import carros
+from app.routers import carros, mantenimiento
 from app.services.carros import (
     CarroNoEncontrado,
     ContenedorEnUso,
@@ -24,6 +24,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Container Tracking API", version="0.1.0", lifespan=lifespan)
 app.include_router(carros.router)
+app.include_router(mantenimiento.router)
 
 
 @app.exception_handler(ErrorDeNegocio)
