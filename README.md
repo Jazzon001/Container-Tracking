@@ -81,7 +81,35 @@ Container-Tracking/
 
 ## Estado del proyecto
 
-En fase inicial: definición de alcance y lineamientos. Aún no hay código ejecutable. Las instrucciones de instalación y ejecución se agregarán cuando exista la primera versión del backend y del frontend.
+Backend en desarrollo (FastAPI + SQLAlchemy). El frontend en Angular aún no se ha iniciado.
+
+| Módulo | Estado |
+|---|---|
+| 1. Control de carros en tiempo real | Carga, entrega y consulta de carros disponibles implementadas |
+| 2. Mantenimiento de carros | Entrada, salida e historial implementados |
+| 3. Reporte de tiempos por etapa | Pendiente |
+| Roles y autenticación | Pendiente |
+
+### Endpoints disponibles
+
+| Método y ruta | Qué hace |
+|---|---|
+| `POST /carros` | Registra un carro |
+| `GET /carros?estado=disponible` | Lista carros, con filtro opcional por estado |
+| `GET /carros/{id}` | Consulta un carro |
+| `POST /carros/{id}/carga` | POY carga un carro con su contenedor elemento |
+| `POST /carros/{id}/entrega` | Almacén recibe el carro vacío |
+| `POST /carros/{id}/mantenimiento` | Un carro disponible entra a mantenimiento |
+| `POST /carros/{id}/mantenimiento/salida` | El carro sale de mantenimiento |
+| `GET /carros/{id}/mantenimiento` | Historial de mantenimiento del carro |
+
+Con el servidor en marcha, la documentación interactiva está en `/docs`.
+
+### Documentación
+
+- [Guía de pruebas y flujo de trabajo](docs/GUIA-PRUEBAS.md): cómo instalar, ejecutar y probar.
+- [Arquitectura (C4)](docs/arquitectura.md) y [decisiones (ADR)](docs/adr/).
+- [Modelo de datos en JSON](docs/modelo-de-datos.json), generado con `python -m scripts.exportar_modelo` desde `backend/`.
 
 ## Convenciones de trabajo
 
