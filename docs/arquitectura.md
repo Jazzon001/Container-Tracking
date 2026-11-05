@@ -1,0 +1,77 @@
+# Arquitectura (modelo C4)
+
+Los diagramas usan Mermaid, que GitHub muestra directamente. Lo marcado como *planeado* aún no está implementado.
+
+## Nivel 1: Contexto
+
+Quién usa el sistema y con qué se relaciona.
+
+```mermaid
+flowchart LR
+    poy["Operador POY<br/>(carga carros)"]
+    alm["Almacén<br/>(recibe carros vacíos)"]
+    dty["DTY y Twisting<br/>(consultan y registran mantenimiento)"]
+    adm["Administrador"]
+    sis["Container Tracking<br/>Control de carros, mantenimiento<br/>y reporte de tiempos"]
+    now["ERP NOW<br/>(sistema externo)"]
+
+    poy --> sis
+    alm --> sis
+    dty --> sis
+    adm --> sis
+    now -. "Excel descargado<br/>(planeado)" .-> sis
+```
+
+El sistema es paralelo a NOW: no lo modifica ni se conecta a él en línea. La relación con NOW es un archivo Excel que el usuario sube para el reporte de tiempos.
+
+## Nivel 2: Contenedores
+
+Las piezas que se despliegan.
+
+```mermaid
+flowchart LR
+    usuario["Usuario<br/>(celular o computadora)"]
+    web["Aplicación web<br/>Angular (planeado)<br/>Vercel"]
+    api["API REST<br/>FastAPI (Python)<br/>Render"]
+    bd[("Base de datos<br/>PostgreSQL en Supabase<br/>SQLite en desarrollo")]
+
+    usuario --> web
+    web -- "HTTPS / JSON" --> api
+    api -- "SQLAlchemy" --> bd
+```
+
+## Nivel 3: Componentes de la API
+
+Cómo está organizado el backend (`backend/app/`).
+
+```mermaid
+flowchart TB
+    rc["routers/carros.py"]
+    rm["routers/mantenimiento.py"]
+    sc["services/carros.py<br/>reglas de carros y transiciones"]
+    sm["services/mantenimiento.py<br/>reglas de mantenimiento"]
+    mod["models.py<br/>Carro, Mantenimiento"]
+    sch["schemas.py<br/>validación de entrada y salida"]
+    db["database.py<br/>sesión y conexión"]
+
+    rc --> sc
+    rm --> sm
+    sm --> sc
+    sc --> mod
+    sm --> mod
+    rc --> sch
+    rm --> sch
+    sc --> db
+    sm --> db
+```
+
+Los routers solo manejan HTTP. Las reglas de negocio están en los servicios, que no conocen HTTP. Las decisiones detrás de esta estructura están en los [ADR](adr/).
+
+## Decisiones registradas
+
+- [ADR 0001: Base de datos configurable por entorno](adr/0001-base-de-datos-por-entorno.md)
+- [ADR 0002: Capa de servicio y transiciones de estado atómicas](adr/0002-transiciones-atomicas-de-estado.md)
+
+## Pendiente de incorporar
+
+Autenticación y roles (JWT), carga del Excel de NOW con el reporte de tiempos y el frontend Angular.
