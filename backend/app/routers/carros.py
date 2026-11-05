@@ -1,10 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Carro
+from app.models import Carro, EstadoCarro
 from app.schemas import CargaCarro, CarroCreate, CarroOut
 from app.services import carros as servicio
 
@@ -24,8 +23,8 @@ def crear_carro(datos: CarroCreate, db: Session = Depends(get_db)):
 
 
 @router.get("", response_model=list[CarroOut])
-def listar_carros(db: Session = Depends(get_db)):
-    return db.scalars(select(Carro).order_by(Carro.id)).all()
+def listar_carros(estado: EstadoCarro | None = None, db: Session = Depends(get_db)):
+    return servicio.listar_carros(db, estado)
 
 
 @router.get("/{carro_id}", response_model=CarroOut)
@@ -36,3 +35,8 @@ def obtener_carro(carro_id: int, db: Session = Depends(get_db)):
 @router.post("/{carro_id}/carga", response_model=CarroOut)
 def cargar_carro(carro_id: int, datos: CargaCarro, db: Session = Depends(get_db)):
     return servicio.cargar_carro(db, carro_id, datos.contenedor_elemento)
+
+
+@router.post("/{carro_id}/entrega", response_model=CarroOut)
+def entregar_carro(carro_id: int, db: Session = Depends(get_db)):
+    return servicio.entregar_carro(db, carro_id)
