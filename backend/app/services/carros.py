@@ -1,5 +1,5 @@
 """Reglas de negocio de los carros, independientes de HTTP."""
-from sqlalchemy import update
+from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -32,26 +32,65 @@ def obtener_carro(db: Session, carro_id: int) -> Carro:
     return carro
 
 
-def cargar_carro(db: Session, carro_id: int, contenedor_elemento: str) -> Carro:
-    """Asocia un carro disponible con un contenedor elemento y lo pone en tránsito.
+def listar_carros(db: Session, estado: EstadoCarro | None = None) -> list[Carro]:
+    consulta = select(Carro).order_by(Carro.id)
+    if estado is not None:
+        consulta = consulta.where(Carro.estado == estado)
+    return list(db.scalars(consulta).all())
 
-    La condición `estado == DISPONIBLE` va dentro del UPDATE para que, si dos
-    usuarios intentan cargar el mismo carro a la vez, solo uno lo consiga.
+
+def transicionar_estado(
+    db: Session,
+    carro_id: int,
+    desde: EstadoCarro,
+    valores: dict,
+    error_estado: str,
+) -> None:
+    """Cambia el carro de un estado a otro de forma atómica (sin hacer commit).
+
+    La condición `estado == desde` va dentro del UPDATE para que, si dos usuarios
+    actúan sobre el mismo carro a la vez, solo uno lo consiga.
     """
+    resultado = db.execute(
+        update(Carro).where(Carro.id == carro_id, Carro.estado == desde).values(**valores)
+    )
+    if resultado.rowcount == 0:
+        db.rollback()
+        obtener_carro(db, carro_id)  # lanza CarroNoEncontrado si no existe
+        raise EstadoInvalido(error_estado)
+
+
+def _carro_actualizado(db: Session, carro_id: int) -> Carro:
+    carro = obtener_carro(db, carro_id)
+    db.refresh(carro)
+    return carro
+
+
+def cargar_carro(db: Session, carro_id: int, contenedor_elemento: str) -> Carro:
+    """Asocia un carro disponible con un contenedor elemento y lo pone en tránsito."""
     try:
-        resultado = db.execute(
-            update(Carro)
-            .where(Carro.id == carro_id, Carro.estado == EstadoCarro.DISPONIBLE)
-            .values(estado=EstadoCarro.EN_TRANSITO, contenedor_elemento=contenedor_elemento)
+        transicionar_estado(
+            db,
+            carro_id,
+            EstadoCarro.DISPONIBLE,
+            {"estado": EstadoCarro.EN_TRANSITO, "contenedor_elemento": contenedor_elemento},
+            "El carro no está disponible para cargarse",
         )
-        if resultado.rowcount == 0:
-            db.rollback()
-            obtener_carro(db, carro_id)  # lanza CarroNoEncontrado si no existe
-            raise EstadoInvalido("El carro no está disponible para cargarse")
         db.commit()
     except IntegrityError:
         db.rollback()
         raise ContenedorEnUso()
-    carro = obtener_carro(db, carro_id)
-    db.refresh(carro)
-    return carro
+    return _carro_actualizado(db, carro_id)
+
+
+def entregar_carro(db: Session, carro_id: int) -> Carro:
+    """Almacén recibe el carro vacío: queda disponible y libera su contenedor elemento."""
+    transicionar_estado(
+        db,
+        carro_id,
+        EstadoCarro.EN_TRANSITO,
+        {"estado": EstadoCarro.DISPONIBLE, "contenedor_elemento": None},
+        "El carro no está en tránsito",
+    )
+    db.commit()
+    return _carro_actualizado(db, carro_id)
