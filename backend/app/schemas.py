@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, StringConstraints
@@ -24,3 +25,12 @@ class CarroOut(BaseModel):
     numero: str
     estado: EstadoCarro
     contenedor_elemento: str | None
+
+
+class MantenimientoOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    carro_id: int
+    fecha_entrada: datetime
+    fecha_salida: datetime | None
