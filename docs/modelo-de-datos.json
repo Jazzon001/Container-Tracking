@@ -38,6 +38,43 @@
       ]
     },
     {
+      "nombre": "usuarios",
+      "columnas": [
+        {
+          "nombre": "id",
+          "tipo": "INTEGER",
+          "nulo": false,
+          "clave_primaria": true,
+          "unico": false,
+          "clave_foranea": []
+        },
+        {
+          "nombre": "username",
+          "tipo": "VARCHAR(50)",
+          "nulo": false,
+          "clave_primaria": false,
+          "unico": true,
+          "clave_foranea": []
+        },
+        {
+          "nombre": "password_hash",
+          "tipo": "VARCHAR(200)",
+          "nulo": false,
+          "clave_primaria": false,
+          "unico": false,
+          "clave_foranea": []
+        },
+        {
+          "nombre": "rol",
+          "tipo": "VARCHAR(8)",
+          "nulo": false,
+          "clave_primaria": false,
+          "unico": false,
+          "clave_foranea": []
+        }
+      ]
+    },
+    {
       "nombre": "mantenimientos",
       "columnas": [
         {
