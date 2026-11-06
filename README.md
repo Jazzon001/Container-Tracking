@@ -88,12 +88,14 @@ Backend en desarrollo (FastAPI + SQLAlchemy). El frontend en Angular aún no se 
 | 1. Control de carros en tiempo real | Carga, entrega y consulta de carros disponibles implementadas |
 | 2. Mantenimiento de carros | Entrada, salida e historial implementados |
 | 3. Reporte de tiempos por etapa | Pendiente |
-| Roles y autenticación | Pendiente |
+| Roles y autenticación | Inicio de sesión con JWT y permisos por rol implementados |
 
 ### Endpoints disponibles
 
 | Método y ruta | Qué hace |
 |---|---|
+| `POST /auth/login` | Inicia sesión y devuelve un token |
+| `POST /usuarios` | Crea un usuario (solo administrador) |
 | `POST /carros` | Registra un carro |
 | `GET /carros?estado=disponible` | Lista carros, con filtro opcional por estado |
 | `GET /carros/{id}` | Consulta un carro |
@@ -104,6 +106,18 @@ Backend en desarrollo (FastAPI + SQLAlchemy). El frontend en Angular aún no se 
 | `GET /carros/{id}/mantenimiento` | Historial de mantenimiento del carro |
 
 Con el servidor en marcha, la documentación interactiva está en `/docs`.
+
+### Permisos por rol
+
+Todas las rutas, salvo `/health` y `/auth/login`, exigen iniciar sesión. El administrador puede realizar cualquier operación.
+
+| Operación | Roles permitidos (además del administrador) |
+|---|---|
+| Consultar carros y su historial de mantenimiento | Todos |
+| Registrar un carro, crear usuarios | Solo administrador |
+| Cargar un carro | POY |
+| Recibir un carro vacío (entrega) | Almacén |
+| Registrar entrada y salida de mantenimiento | POY y DTY |
 
 ### Documentación
 
