@@ -3,14 +3,22 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Carro, EstadoCarro
+from app.dependencias import requiere_roles, usuario_actual
+from app.models import Carro, EstadoCarro, Rol
 from app.schemas import CargaCarro, CarroCreate, CarroOut
 from app.services import carros as servicio
 
-router = APIRouter(prefix="/carros", tags=["carros"])
+# Consultar carros: cualquier usuario con sesión iniciada.
+# Cada operación que cambia datos exige además un rol concreto.
+router = APIRouter(prefix="/carros", tags=["carros"], dependencies=[Depends(usuario_actual)])
 
 
-@router.post("", response_model=CarroOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=CarroOut,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(requiere_roles(Rol.ADMIN))],
+)
 def crear_carro(datos: CarroCreate, db: Session = Depends(get_db)):
     carro = Carro(numero=datos.numero)
     db.add(carro)
@@ -32,11 +40,19 @@ def obtener_carro(carro_id: int, db: Session = Depends(get_db)):
     return servicio.obtener_carro(db, carro_id)
 
 
-@router.post("/{carro_id}/carga", response_model=CarroOut)
+@router.post(
+    "/{carro_id}/carga",
+    response_model=CarroOut,
+    dependencies=[Depends(requiere_roles(Rol.POY))],
+)
 def cargar_carro(carro_id: int, datos: CargaCarro, db: Session = Depends(get_db)):
     return servicio.cargar_carro(db, carro_id, datos.contenedor_elemento)
 
 
-@router.post("/{carro_id}/entrega", response_model=CarroOut)
+@router.post(
+    "/{carro_id}/entrega",
+    response_model=CarroOut,
+    dependencies=[Depends(requiere_roles(Rol.ALMACEN))],
+)
 def entregar_carro(carro_id: int, db: Session = Depends(get_db)):
     return servicio.entregar_carro(db, carro_id)

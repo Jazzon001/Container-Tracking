@@ -3,26 +3,8 @@ from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.errores import CarroNoEncontrado, ContenedorEnUso, EstadoInvalido
 from app.models import Carro, EstadoCarro
-
-
-class ErrorDeNegocio(Exception):
-    """Base de los errores que la API traduce a una respuesta HTTP."""
-
-
-class CarroNoEncontrado(ErrorDeNegocio):
-    def __init__(self) -> None:
-        super().__init__("Carro no encontrado")
-
-
-class EstadoInvalido(ErrorDeNegocio):
-    def __init__(self, detalle: str) -> None:
-        super().__init__(detalle)
-
-
-class ContenedorEnUso(ErrorDeNegocio):
-    def __init__(self) -> None:
-        super().__init__("Ese contenedor elemento ya está asignado a otro carro")
 
 
 def obtener_carro(db: Session, carro_id: int) -> Carro:
