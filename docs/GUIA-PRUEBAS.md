@@ -79,6 +79,48 @@ La API lee la variable de entorno `DATABASE_URL`:
 
 **Nunca escribas la cadena de Supabase en un archivo del repositorio.** Contiene la contraseña y el checker de la universidad revisa que no haya secretos.
 
+## 5.1 Seguridad: clave del token y primer administrador
+
+La API firma los tokens de inicio de sesión con una clave secreta que se lee de la variable de entorno `JWT_SECRET`. **Las pruebas la definen solas**, pero para arrancar el servidor tú debes definirla (cada vez que abras una terminal nueva):
+
+```powershell
+$env:JWT_SECRET = "escribe-aqui-un-texto-largo-y-aleatorio"
+```
+
+Si prefieres generar una clave aleatoria:
+
+```powershell
+python -c "import secrets; print(secrets.token_urlsafe(32))"
+```
+
+**Nunca guardes esta clave en un archivo del proyecto ni la subas a GitHub.** En producción se define solo como variable de entorno en Render.
+
+Como crear usuarios exige ser administrador, el primero se crea desde la terminal (con el entorno activo, dentro de `backend`):
+
+```powershell
+python -m scripts.crear_usuario admin admin
+```
+
+El script te pide la contraseña por teclado (no se muestra al escribir). Después, para probar en el navegador:
+
+1. Arranca el servidor y abre **http://127.0.0.1:8000/docs**.
+2. En `POST /auth/login`, usa *Try it out* con tu usuario y contraseña. Copia el `access_token` de la respuesta.
+3. Pulsa el botón **Authorize** (arriba a la derecha), pega el token y acepta.
+4. Ya puedes probar el resto de los endpoints con esa sesión.
+
+Si ves **401**, no has iniciado sesión o el token venció. Si ves **403**, tu usuario no tiene el rol que esa operación exige.
+
+### Medir la cobertura de las pruebas
+
+La cobertura indica qué porcentaje del código ejecutan las pruebas. Instala las herramientas de desarrollo (una vez) y corre:
+
+```powershell
+pip install -r requirements-dev.txt
+pytest --cov=app --cov-report=term-missing
+```
+
+La columna `Missing` lista las líneas que ninguna prueba toca.
+
 ## 6. Flujo de trabajo diario con Git
 
 Un cambio pequeño y completo por vez:
