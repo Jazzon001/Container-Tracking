@@ -13,6 +13,14 @@ class EstadoCarro(str, enum.Enum):
     EN_MANTENIMIENTO = "en_mantenimiento"
 
 
+class Rol(str, enum.Enum):
+    POY = "poy"
+    ALMACEN = "almacen"
+    DTY = "dty"
+    TWISTING = "twisting"
+    ADMIN = "admin"
+
+
 class Carro(Base):
     """Carro (contenedor de 24 bobinas) que circula entre procesos."""
 
@@ -41,3 +49,15 @@ class Mantenimiento(Base):
     fecha_salida: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), default=None
     )
+
+
+class Usuario(Base):
+    """Persona que usa el sistema. Su rol define qué operaciones puede hacer."""
+
+    __tablename__ = "usuarios"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    username: Mapped[str] = mapped_column(String(50), unique=True, index=True)
+    # Nunca se guarda la contraseña, solo su hash con sal.
+    password_hash: Mapped[str] = mapped_column(String(200))
+    rol: Mapped[Rol] = mapped_column(Enum(Rol))
