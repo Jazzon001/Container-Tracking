@@ -11,7 +11,7 @@ flowchart LR
     poy["Operador POY<br/>(carga carros)"]
     alm["Almacén<br/>(recibe carros vacíos)"]
     dty["DTY y Twisting<br/>(consultan y registran mantenimiento)"]
-    adm["Administrador"]
+    adm["Administrador<br/>(crea usuarios y carros)"]
     sis["Container Tracking<br/>Control de carros, mantenimiento<br/>y reporte de tiempos"]
     now["ERP NOW<br/>(sistema externo)"]
 
@@ -36,7 +36,7 @@ flowchart LR
     bd[("Base de datos<br/>PostgreSQL en Supabase<br/>SQLite en desarrollo")]
 
     usuario --> web
-    web -- "HTTPS / JSON" --> api
+    web -- "HTTPS / JSON + token JWT" --> api
     api -- "SQLAlchemy" --> bd
 ```
 
@@ -46,32 +46,54 @@ Cómo está organizado el backend (`backend/app/`).
 
 ```mermaid
 flowchart TB
+    rauth["routers/auth.py<br/>login"]
+    rusu["routers/usuarios.py"]
     rc["routers/carros.py"]
     rm["routers/mantenimiento.py"]
+    dep["dependencias.py<br/>sesión iniciada y rol requerido"]
+    seg["seguridad.py<br/>hash de contraseñas y JWT"]
+    su["services/usuarios.py"]
     sc["services/carros.py<br/>reglas de carros y transiciones"]
     sm["services/mantenimiento.py<br/>reglas de mantenimiento"]
-    mod["models.py<br/>Carro, Mantenimiento"]
+    err["errores.py<br/>errores de negocio con código HTTP"]
+    mod["models.py<br/>Carro, Mantenimiento, Usuario"]
     sch["schemas.py<br/>validación de entrada y salida"]
     db["database.py<br/>sesión y conexión"]
 
+    rauth --> su
+    rauth --> seg
+    rusu --> su
     rc --> sc
     rm --> sm
     sm --> sc
+    rusu --> dep
+    rc --> dep
+    rm --> dep
+    dep --> seg
+    dep --> su
+    su --> mod
     sc --> mod
     sm --> mod
+    su --> err
+    sc --> err
+    seg --> err
     rc --> sch
     rm --> sch
+    rauth --> sch
+    rusu --> sch
+    su --> db
     sc --> db
     sm --> db
 ```
 
-Los routers solo manejan HTTP. Las reglas de negocio están en los servicios, que no conocen HTTP. Las decisiones detrás de esta estructura están en los [ADR](adr/).
+Los routers solo manejan HTTP. Las reglas de negocio están en los servicios, que no conocen HTTP. Los errores de negocio declaran su propio código HTTP y un único manejador en `main.py` los traduce. Las decisiones detrás de esta estructura están en los [ADR](adr/).
 
 ## Decisiones registradas
 
 - [ADR 0001: Base de datos configurable por entorno](adr/0001-base-de-datos-por-entorno.md)
 - [ADR 0002: Capa de servicio y transiciones de estado atómicas](adr/0002-transiciones-atomicas-de-estado.md)
+- [ADR 0003: Autenticación con JWT propio y autorización por roles](adr/0003-autenticacion-jwt-y-roles.md)
 
 ## Pendiente de incorporar
 
-Autenticación y roles (JWT), carga del Excel de NOW con el reporte de tiempos y el frontend Angular.
+Carga del Excel de NOW con el reporte de tiempos y el frontend Angular.
