@@ -1,5 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { AuthService } from './auth.service';
 
 @Component({
@@ -18,6 +19,7 @@ import { AuthService } from './auth.service';
 })
 export class LoginComponent {
   private readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
   readonly username = signal('');
   readonly password = signal('');
   readonly error = signal('');
@@ -27,7 +29,11 @@ export class LoginComponent {
     evento.preventDefault();
     if (!this.username() || !this.password()) return;
     this.auth.login(this.username(), this.password()).subscribe({
-      next: () => { this.error.set(''); this.iniciada.set(true); },
+      next: () => {
+        this.error.set('');
+        this.iniciada.set(true);
+        this.router.navigateByUrl('/carros');
+      },
       error: () => { this.iniciada.set(false); this.error.set('Usuario o contraseña incorrectos'); },
     });
   }
