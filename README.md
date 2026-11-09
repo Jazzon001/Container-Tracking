@@ -81,7 +81,7 @@ Container-Tracking/
 
 ## Estado del proyecto
 
-Backend en desarrollo (FastAPI + SQLAlchemy). El frontend en Angular aún no se ha iniciado.
+Backend (FastAPI + SQLAlchemy) y frontend (Angular) en desarrollo.
 
 | Módulo | Estado |
 |---|---|
@@ -89,6 +89,7 @@ Backend en desarrollo (FastAPI + SQLAlchemy). El frontend en Angular aún no se 
 | 2. Mantenimiento de carros | Entrada, salida e historial implementados |
 | 3. Reporte de tiempos por etapa | Pendiente |
 | Roles y autenticación | Inicio de sesión con JWT y permisos por rol implementados |
+| Frontend (Angular) | Inicio de sesión, rutas protegidas y lista de carros con filtro por estado |
 
 ### Endpoints disponibles
 
