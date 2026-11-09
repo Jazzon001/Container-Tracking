@@ -121,6 +121,31 @@ pytest --cov=app --cov-report=term-missing
 
 La columna `Missing` lista las líneas que ninguna prueba toca.
 
+## 5.2 Frontend (Angular)
+
+Requiere **Node.js** (el proyecto se probó con Node 24). Desde la carpeta `frontend`:
+
+```powershell
+cd frontend
+npm install
+npm start
+```
+
+Abre **http://localhost:4200**. El frontend habla con la API en `http://127.0.0.1:8000`, así que el backend debe estar corriendo en **otra terminal** (con `JWT_SECRET` definida, como en la sección 5.1) y con un usuario creado.
+
+Si el navegador muestra un error de **CORS**, la API no está permitiendo el origen del frontend. Por defecto acepta `http://localhost:4200` y `http://127.0.0.1:4200`; para otros dominios (por ejemplo, el de Vercel) se define la variable de entorno `CORS_ORIGINS`, separada por comas.
+
+Pruebas y compilación:
+
+```powershell
+npx ng test --no-watch
+npm run build
+```
+
+La primera línea ejecuta las pruebas una sola vez (sin `--no-watch` se quedan esperando cambios; sal con `Ctrl + C`).
+
+> **Ojo con OneDrive:** tu carpeta del proyecto está dentro de OneDrive, y `node_modules` contiene decenas de miles de archivos que OneDrive intentará sincronizar (lento, y a veces con conflictos). Lo más cómodo es mover el repositorio fuera de OneDrive (por ejemplo, a `C:\dev\Container-Tracking`) o pausar la sincronización mientras trabajas.
+
 ## 6. Flujo de trabajo diario con Git
 
 Un cambio pequeño y completo por vez:
