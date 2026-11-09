@@ -1,6 +1,8 @@
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.database import Base, engine
@@ -15,6 +17,22 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Container Tracking API", version="0.1.0", lifespan=lifespan)
+
+# Orígenes (dominios) del frontend que pueden llamar a la API desde el navegador.
+# En producción se define CORS_ORIGINS con el dominio de Vercel, separado por comas.
+ORIGENES_PERMITIDOS = [
+    origen.strip()
+    for origen in os.environ.get(
+        "CORS_ORIGINS", "http://localhost:4200,http://127.0.0.1:4200"
+    ).split(",")
+    if origen.strip()
+]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=ORIGENES_PERMITIDOS,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 app.include_router(auth.router)
 app.include_router(usuarios.router)
 app.include_router(carros.router)
