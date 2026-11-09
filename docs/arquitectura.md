@@ -31,7 +31,7 @@ Las piezas que se despliegan.
 ```mermaid
 flowchart LR
     usuario["Usuario<br/>(celular o computadora)"]
-    web["Aplicación web<br/>Angular (planeado)<br/>Vercel"]
+    web["Aplicación web<br/>Angular<br/>Vercel (despliegue planeado)"]
     api["API REST<br/>FastAPI (Python)<br/>Render"]
     bd[("Base de datos<br/>PostgreSQL en Supabase<br/>SQLite en desarrollo")]
 
@@ -96,4 +96,4 @@ Los routers solo manejan HTTP. Las reglas de negocio están en los servicios, qu
 
 ## Pendiente de incorporar
 
-Carga del Excel de NOW con el reporte de tiempos y el frontend Angular.
+Carga del Excel de NOW con el reporte de tiempos, y el resto del frontend (carga y entrega de carros, mantenimiento, captura con lector de código de barras, PWA con funcionamiento sin conexión).
