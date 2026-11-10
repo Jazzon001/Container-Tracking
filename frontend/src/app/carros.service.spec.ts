@@ -21,7 +21,7 @@ describe('CarrosService', () => {
     http = TestBed.inject(HttpTestingController);
   });
 
-  it('lista todos los carros sin filtro', () => {
+  it('lista todos los carros', () => {
     let recibidos: Carro[] = [];
     servicio.listar().subscribe((carros) => (recibidos = carros));
 
@@ -33,11 +33,11 @@ describe('CarrosService', () => {
     expect(recibidos[0].numero).toBe('C-001');
   });
 
-  it('envía el estado como parámetro para filtrar', () => {
-    servicio.listar('en_transito').subscribe();
+  it('no envía filtros: la pantalla filtra en el cliente', () => {
+    servicio.listar().subscribe();
 
-    const peticion = http.expectOne('http://api.test/carros?estado=en_transito');
-    expect(peticion.request.params.get('estado')).toBe('en_transito');
+    const peticion = http.expectOne('http://api.test/carros');
+    expect(peticion.request.params.keys().length).toBe(0);
     peticion.flush([]);
   });
 });
