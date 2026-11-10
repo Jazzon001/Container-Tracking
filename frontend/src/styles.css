@@ -1,14 +1,24 @@
-/* Estilos globales. Se piensa primero en el celular: controles grandes y una sola columna. */
+/* Estilos globales. Se piensa primero en el celular: controles grandes y una sola columna.
+   Los colores viven en variables para cambiar el aspecto (o el modo oscuro) en un solo lugar. */
 
 :root {
   --color-fondo: #f4f5f7;
   --color-superficie: #ffffff;
   --color-texto: #1c2430;
+  --color-suave: #5b6675;
   --color-borde: #cfd5dd;
   --color-primario: #1d4ed8;
   --color-sobre-primario: #ffffff;
   --color-error: #b42318;
   --radio: 0.5rem;
+
+  /* Estados del carro: el color acompaña al texto, nunca lo reemplaza. */
+  --disponible-fondo: #dcfce7;
+  --disponible-texto: #14532d;
+  --en-transito-fondo: #dbeafe;
+  --en-transito-texto: #1e3a8a;
+  --en-mantenimiento-fondo: #fef3c7;
+  --en-mantenimiento-texto: #78350f;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -16,11 +26,33 @@
     --color-fondo: #11151c;
     --color-superficie: #1b212b;
     --color-texto: #e8ecf1;
+    --color-suave: #aab4c2;
     --color-borde: #3a4452;
     --color-primario: #6ea0ff;
     --color-sobre-primario: #0b1220;
     --color-error: #ff8a80;
+
+    --disponible-fondo: #14532d;
+    --disponible-texto: #bbf7d0;
+    --en-transito-fondo: #1e3a8a;
+    --en-transito-texto: #bfdbfe;
+    --en-mantenimiento-fondo: #78350f;
+    --en-mantenimiento-texto: #fde68a;
   }
+}
+
+/* Cualquier elemento con data-estado recibe los colores de ese estado. */
+[data-estado='disponible'] {
+  --estado-fondo: var(--disponible-fondo);
+  --estado-texto: var(--disponible-texto);
+}
+[data-estado='en_transito'] {
+  --estado-fondo: var(--en-transito-fondo);
+  --estado-texto: var(--en-transito-texto);
+}
+[data-estado='en_mantenimiento'] {
+  --estado-fondo: var(--en-mantenimiento-fondo);
+  --estado-texto: var(--en-mantenimiento-texto);
 }
 
 *,
@@ -40,6 +72,7 @@ body {
 h1 {
   margin: 0 0 1rem;
   font-size: 1.5rem;
+  line-height: 1.25;
 }
 
 /* Formularios (por ahora, el inicio de sesión) */
@@ -82,6 +115,13 @@ button {
   border: 0;
   border-radius: var(--radio);
   cursor: pointer;
+}
+
+/* Botón de acción secundaria: solo contorno. */
+.secundario {
+  color: var(--color-texto);
+  background: transparent;
+  border: 1px solid var(--color-borde);
 }
 
 form button {
