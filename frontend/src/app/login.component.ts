@@ -15,13 +15,23 @@ function mensajeDeError(status: number): string {
   imports: [FormsModule],
   template: `
     <form (submit)="entrar($event)">
+      <p class="marca">Container Tracking</p>
       <h1>Iniciar sesión</h1>
+      <p class="ayuda">Ingresa con tu usuario del sistema.</p>
       <label>Usuario <input name="username" [ngModel]="username()" (ngModelChange)="username.set($event)" autocomplete="username" /></label>
       <label>Contraseña <input name="password" type="password" [ngModel]="password()" (ngModelChange)="password.set($event)" autocomplete="current-password" /></label>
       <button type="submit">Entrar</button>
       @if (error()) { <p role="alert">{{ error() }}</p> }
       @if (iniciada()) { <p>Sesión iniciada</p> }
     </form>
+  `,
+  styles: `
+    .marca {
+      margin: 0 0 0.5rem; font-size: 0.875rem; font-weight: 700;
+      letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-primario);
+    }
+    h1 { margin-bottom: 0.25rem; }
+    .ayuda { margin: 0 0 1.5rem; color: var(--color-suave); }
   `,
 })
 export class LoginComponent {
