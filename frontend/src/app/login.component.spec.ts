@@ -68,6 +68,26 @@ describe('LoginComponent', () => {
     expect(navegar).not.toHaveBeenCalled();
   });
 
+  it('avisa que no hay conexión si la API no responde', () => {
+    auth.login.mockReturnValue(throwError(() => ({ status: 0 })));
+    escribir('input[name="username"]', 'poy1');
+    escribir('input[name="password"]', 'secreta');
+    enviar();
+    const mensaje = el.querySelector('[role="alert"]')?.textContent;
+    expect(mensaje).toContain('No se pudo conectar');
+    expect(mensaje).not.toContain('incorrectos');
+  });
+
+  it('avisa de un problema del servidor sin culpar a las credenciales', () => {
+    auth.login.mockReturnValue(throwError(() => ({ status: 500 })));
+    escribir('input[name="username"]', 'poy1');
+    escribir('input[name="password"]', 'secreta');
+    enviar();
+    const mensaje = el.querySelector('[role="alert"]')?.textContent;
+    expect(mensaje).toContain('problema');
+    expect(mensaje).not.toContain('incorrectos');
+  });
+
   it('no envía si faltan datos', () => {
     enviar();
     expect(auth.login).not.toHaveBeenCalled();

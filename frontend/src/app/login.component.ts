@@ -3,6 +3,13 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from './auth.service';
 
+/** Cada tipo de fallo se explica distinto: así el usuario sabe qué corregir. */
+function mensajeDeError(status: number): string {
+  if (status === 401) return 'Usuario o contraseña incorrectos';
+  if (status === 0) return 'No se pudo conectar con el servidor. Revisa que la API esté en marcha.';
+  return 'El servidor tuvo un problema. Intenta de nuevo.';
+}
+
 @Component({
   selector: 'app-login',
   imports: [FormsModule],
@@ -34,7 +41,10 @@ export class LoginComponent {
         this.iniciada.set(true);
         this.router.navigateByUrl('/carros');
       },
-      error: () => { this.iniciada.set(false); this.error.set('Usuario o contraseña incorrectos'); },
+      error: (fallo: { status: number }) => {
+        this.iniciada.set(false);
+        this.error.set(mensajeDeError(fallo.status));
+      },
     });
   }
 }
