@@ -1,1 +1,104 @@
-/* You can add global styles to this file, and also import other style files */
+/* Estilos globales. Se piensa primero en el celular: controles grandes y una sola columna. */
+
+:root {
+  --color-fondo: #f4f5f7;
+  --color-superficie: #ffffff;
+  --color-texto: #1c2430;
+  --color-borde: #cfd5dd;
+  --color-primario: #1d4ed8;
+  --color-sobre-primario: #ffffff;
+  --color-error: #b42318;
+  --radio: 0.5rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-fondo: #11151c;
+    --color-superficie: #1b212b;
+    --color-texto: #e8ecf1;
+    --color-borde: #3a4452;
+    --color-primario: #6ea0ff;
+    --color-sobre-primario: #0b1220;
+    --color-error: #ff8a80;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.5;
+  color: var(--color-texto);
+  background: var(--color-fondo);
+}
+
+h1 {
+  margin: 0 0 1rem;
+  font-size: 1.5rem;
+}
+
+/* Formularios (por ahora, el inicio de sesión) */
+form {
+  max-width: 22rem;
+  margin: 2rem auto;
+  padding: 1.5rem;
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio);
+}
+
+label {
+  display: block;
+  margin-bottom: 1rem;
+  font-weight: 500;
+}
+
+input,
+select {
+  display: block;
+  width: 100%;
+  min-height: 2.75rem;
+  margin-top: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  font: inherit;
+  color: inherit;
+  background: var(--color-fondo);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio);
+}
+
+button {
+  min-height: 2.75rem;
+  padding: 0.5rem 1.25rem;
+  font: inherit;
+  font-weight: 600;
+  color: var(--color-sobre-primario);
+  background: var(--color-primario);
+  border: 0;
+  border-radius: var(--radio);
+  cursor: pointer;
+}
+
+form button {
+  width: 100%;
+}
+
+button:hover {
+  filter: brightness(1.1);
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-primario);
+  outline-offset: 2px;
+}
+
+[role='alert'] {
+  margin: 1rem 0 0;
+  font-weight: 500;
+  color: var(--color-error);
+}
