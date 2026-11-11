@@ -14,10 +14,14 @@ def obtener_carro(db: Session, carro_id: int) -> Carro:
     return carro
 
 
-def listar_carros(db: Session, estado: EstadoCarro | None = None) -> list[Carro]:
+def listar_carros(
+    db: Session, estado: EstadoCarro | None = None, numero: str | None = None
+) -> list[Carro]:
     consulta = select(Carro).order_by(Carro.id)
     if estado is not None:
         consulta = consulta.where(Carro.estado == estado)
+    if numero is not None:
+        consulta = consulta.where(Carro.numero == numero)
     return list(db.scalars(consulta).all())
 
 

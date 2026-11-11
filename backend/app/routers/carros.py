@@ -31,8 +31,12 @@ def crear_carro(datos: CarroCreate, db: Session = Depends(get_db)):
 
 
 @router.get("", response_model=list[CarroOut])
-def listar_carros(estado: EstadoCarro | None = None, db: Session = Depends(get_db)):
-    return servicio.listar_carros(db, estado)
+def listar_carros(
+    estado: EstadoCarro | None = None,
+    numero: str | None = None,
+    db: Session = Depends(get_db),
+):
+    return servicio.listar_carros(db, estado, numero)
 
 
 @router.get("/{carro_id}", response_model=CarroOut)
