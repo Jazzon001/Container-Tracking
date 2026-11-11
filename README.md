@@ -89,16 +89,16 @@ Backend (FastAPI + SQLAlchemy) y frontend (Angular) en desarrollo.
 | 2. Mantenimiento de carros | Entrada, salida e historial implementados |
 | 3. Reporte de tiempos por etapa | Pendiente |
 | Roles y autenticación | Inicio de sesión con JWT y permisos por rol implementados |
-| Frontend (Angular) | Inicio de sesión, rutas protegidas y lista de carros con filtro por estado |
+| Frontend (Angular) | Inicio de sesión, lista de carros con resumen por estado, carga de carros (POY) y recepción (Almacén) con campo de escaneo |
 
 ### Endpoints disponibles
 
 | Método y ruta | Qué hace |
 |---|---|
-| `POST /auth/login` | Inicia sesión y devuelve un token |
+| `POST /auth/login` | Inicia sesión y devuelve un token y el rol del usuario |
 | `POST /usuarios` | Crea un usuario (solo administrador) |
 | `POST /carros` | Registra un carro |
-| `GET /carros?estado=disponible` | Lista carros, con filtro opcional por estado |
+| `GET /carros` | Lista carros; filtros opcionales `?estado=disponible` y `?numero=C-001` |
 | `GET /carros/{id}` | Consulta un carro |
 | `POST /carros/{id}/carga` | POY carga un carro con su contenedor elemento |
 | `POST /carros/{id}/entrega` | Almacén recibe el carro vacío |
