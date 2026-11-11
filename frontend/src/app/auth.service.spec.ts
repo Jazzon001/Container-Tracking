@@ -19,12 +19,20 @@ describe('AuthService', () => {
     return TestBed.inject(AuthService);
   }
 
+  function iniciarSesion(auth: AuthService, rol = 'poy') {
+    auth.login('maria', 'clave-segura-123').subscribe();
+    http
+      .expectOne('http://api.test/auth/login')
+      .flush({ access_token: 'abc', token_type: 'bearer', rol });
+  }
+
   beforeEach(() => localStorage.clear());
 
   it('arranca sin sesión', () => {
     const auth = crearServicio();
     expect(auth.autenticado()).toBe(false);
     expect(auth.token()).toBeNull();
+    expect(auth.rol()).toBeNull();
   });
 
   it('envía usuario y contraseña a /auth/login', () => {
@@ -34,16 +42,16 @@ describe('AuthService', () => {
     const peticion = http.expectOne('http://api.test/auth/login');
     expect(peticion.request.method).toBe('POST');
     expect(peticion.request.body).toEqual({ username: 'maria', password: 'clave-segura-123' });
-    peticion.flush({ access_token: 'abc', token_type: 'bearer' });
+    peticion.flush({ access_token: 'abc', token_type: 'bearer', rol: 'poy' });
   });
 
-  it('guarda el token al iniciar sesión', () => {
+  it('guarda el token y el rol al iniciar sesión', () => {
     const auth = crearServicio();
-    auth.login('maria', 'clave-segura-123').subscribe();
-    http.expectOne('http://api.test/auth/login').flush({ access_token: 'abc', token_type: 'bearer' });
+    iniciarSesion(auth, 'almacen');
 
     expect(auth.autenticado()).toBe(true);
     expect(auth.token()).toBe('abc');
+    expect(auth.rol()).toBe('almacen');
   });
 
   it('no guarda nada si las credenciales son incorrectas', () => {
@@ -52,21 +60,55 @@ describe('AuthService', () => {
     http.expectOne('http://api.test/auth/login').flush({}, { status: 401, statusText: 'Unauthorized' });
 
     expect(auth.autenticado()).toBe(false);
+    expect(auth.rol()).toBeNull();
   });
 
   it('recuerda la sesión después de recargar la página', () => {
     localStorage.setItem('container_tracking_token', 'guardado');
+    localStorage.setItem('container_tracking_rol', 'dty');
     const auth = crearServicio();
+
     expect(auth.token()).toBe('guardado');
+    expect(auth.rol()).toBe('dty');
     expect(auth.autenticado()).toBe(true);
   });
 
-  it('cierra la sesión y borra el token guardado', () => {
+  it('cierra la sesión y borra lo guardado', () => {
     localStorage.setItem('container_tracking_token', 'guardado');
+    localStorage.setItem('container_tracking_rol', 'dty');
     const auth = crearServicio();
     auth.logout();
 
     expect(auth.autenticado()).toBe(false);
+    expect(auth.rol()).toBeNull();
     expect(localStorage.getItem('container_tracking_token')).toBeNull();
+    expect(localStorage.getItem('container_tracking_rol')).toBeNull();
+  });
+
+  describe('puede', () => {
+    it('permite al rol indicado', () => {
+      const auth = crearServicio();
+      iniciarSesion(auth, 'poy');
+      expect(auth.puede('poy')).toBe(true);
+      expect(auth.puede('almacen', 'poy')).toBe(true);
+    });
+
+    it('no permite a otro rol', () => {
+      const auth = crearServicio();
+      iniciarSesion(auth, 'poy');
+      expect(auth.puede('almacen')).toBe(false);
+    });
+
+    it('permite todo al administrador', () => {
+      const auth = crearServicio();
+      iniciarSesion(auth, 'admin');
+      expect(auth.puede('almacen')).toBe(true);
+      expect(auth.puede('poy')).toBe(true);
+    });
+
+    it('no permite nada sin sesión', () => {
+      const auth = crearServicio();
+      expect(auth.puede('poy')).toBe(false);
+    });
   });
 });
