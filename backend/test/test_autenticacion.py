@@ -34,6 +34,10 @@ def test_login_correcto_devuelve_un_token(cliente_anonimo, con_usuario):
     assert response.json()["access_token"]
 
 
+def test_login_devuelve_el_rol_del_usuario(cliente_anonimo, con_usuario):
+    assert login(cliente_anonimo, "maria", "clave-segura-123").json()["rol"] == "poy"
+
+
 def test_el_token_del_login_permite_consultar_carros(cliente_anonimo, con_usuario):
     token = login(cliente_anonimo, "maria", "clave-segura-123").json()["access_token"]
     response = cliente_anonimo.get("/carros", headers={"Authorization": f"Bearer {token}"})

@@ -47,6 +47,9 @@ class LoginIn(BaseModel):
 class TokenOut(BaseModel):
     access_token: str
     token_type: str = "bearer"
+    # El frontend lo usa solo para mostrar u ocultar opciones; la API sigue
+    # validando el permiso en cada petición.
+    rol: Rol
 
 
 class UsuarioCreate(BaseModel):
