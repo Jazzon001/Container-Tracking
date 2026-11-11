@@ -1,10 +1,14 @@
 import { Routes } from '@angular/router';
-import { authGuard } from './auth.guard';
+import { authGuard, rolGuard } from './auth.guard';
+import { CargaComponent } from './carga.component';
 import { CarrosComponent } from './carros.component';
+import { EntregaComponent } from './entrega.component';
 import { LoginComponent } from './login.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
   { path: 'carros', component: CarrosComponent, canActivate: [authGuard] },
+  { path: 'carga', component: CargaComponent, canActivate: [authGuard, rolGuard('poy')] },
+  { path: 'entrega', component: EntregaComponent, canActivate: [authGuard, rolGuard('almacen')] },
   { path: '', redirectTo: 'carros', pathMatch: 'full' },
 ];
