@@ -2,7 +2,7 @@ import enum
 from datetime import datetime
 
 from sqlalchemy import DateTime, Enum, ForeignKey, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
 from app.tiempo import ahora
@@ -49,6 +49,31 @@ class Carro(Base):
     # Cuándo pasó el carro a su estado actual. Con esto se sabe desde hace cuánto
     # un carro está en tránsito, que es lo que busca el cliente.
     estado_desde: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=ahora)
+
+
+class Carga(Base):
+    """Un viaje de un carro: desde que POY lo carga hasta que Almacén lo recibe vacío.
+
+    `Carro.contenedor_elemento` se libera al recibir el carro (para poder reutilizar el
+    código), así que este historial es lo único que conserva qué contenedor iba en qué
+    carro y cuánto tiempo tardó. El reporte de tiempos se apoya en él.
+    """
+
+    __tablename__ = "cargas"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    carro_id: Mapped[int] = mapped_column(ForeignKey("carros.id"), index=True)
+    # Sin restricción de unicidad: un mismo código puede volver a usarse en otro viaje.
+    contenedor_elemento: Mapped[str] = mapped_column(String(50), index=True)
+    cargada_en: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    # Mientras es nulo, el carro sigue en tránsito.
+    recibida_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+
+    carro: Mapped[Carro] = relationship(lazy="joined")
+
+    @property
+    def carro_numero(self) -> str:
+        return self.carro.numero
 
 
 class Mantenimiento(Base):
