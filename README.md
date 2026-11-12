@@ -89,6 +89,8 @@ Backend (FastAPI + SQLAlchemy) y frontend (Angular) en desarrollo.
 | 2. Mantenimiento de carros | Entrada, salida e historial implementados |
 | 3. Reporte de tiempos por etapa | Pendiente |
 | Roles y autenticación | Inicio de sesión con JWT y permisos por rol implementados |
+| Migraciones de la base de datos | Implementadas (Alembic); se aplican solas al arrancar |
+| Despliegue (Supabase, Render, Vercel) | Preparado y documentado; pendiente de publicar |
 | Frontend (Angular) | Inicio de sesión, lista de carros con resumen por estado, desde hace cuánto está cada carro así y actualización automática, carga de carros (POY), recepción (Almacén) y mantenimiento (POY y DTY) con campo de escaneo |
 
 ### Endpoints disponibles
@@ -127,6 +129,7 @@ Todas las rutas, salvo `/health` y `/auth/login`, exigen iniciar sesión. El adm
 ### Documentación
 
 - [Guía de pruebas y flujo de trabajo](docs/GUIA-PRUEBAS.md): cómo instalar, ejecutar y probar.
+- [Guía de despliegue](docs/DESPLIEGUE.md): cómo publicar el sistema en Supabase, Render y Vercel.
 - [Arquitectura (C4)](docs/arquitectura.md) y [decisiones (ADR)](docs/adr/).
 - [Modelo de datos en JSON](docs/modelo-de-datos.json), generado con `python -m scripts.exportar_modelo` desde `backend/`.
 
