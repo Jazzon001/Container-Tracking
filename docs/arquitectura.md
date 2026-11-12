@@ -56,7 +56,7 @@ flowchart TB
     sc["services/carros.py<br/>reglas de carros y transiciones"]
     sm["services/mantenimiento.py<br/>reglas de mantenimiento"]
     err["errores.py<br/>errores de negocio con código HTTP"]
-    mod["models.py<br/>Carro, Mantenimiento, Usuario"]
+    mod["models.py<br/>Carro, Carga, Mantenimiento, Usuario"]
     sch["schemas.py<br/>validación de entrada y salida"]
     db["database.py<br/>sesión y conexión"]
 
@@ -94,6 +94,7 @@ Los routers solo manejan HTTP. Las reglas de negocio están en los servicios, qu
 - [ADR 0002: Capa de servicio y transiciones de estado atómicas](adr/0002-transiciones-atomicas-de-estado.md)
 - [ADR 0003: Autenticación con JWT propio y autorización por roles](adr/0003-autenticacion-jwt-y-roles.md)
 - [ADR 0004: Migraciones con Alembic y despliegue en Render, Vercel y Supabase](adr/0004-migraciones-y-despliegue.md)
+- [ADR 0005: Historial de cargas como tabla propia](adr/0005-historial-de-cargas.md)
 
 La guía paso a paso para publicar el sistema está en [DESPLIEGUE.md](DESPLIEGUE.md).
 
