@@ -1,4 +1,4 @@
-import { hace } from './tiempo';
+import { duracion, hace } from './tiempo';
 
 const AHORA = Date.parse('2026-11-12T12:00:00Z');
 const desde = (milisegundos: number) => new Date(AHORA - milisegundos).toISOString();
@@ -36,5 +36,27 @@ describe('hace', () => {
 
   it('entiende las fechas UTC que envía la API', () => {
     expect(hace('2026-11-12T09:00:00Z', AHORA)).toBe('hace 3 h');
+  });
+});
+
+describe('duracion', () => {
+  const inicio = '2026-11-10T08:00:00Z';
+
+  it('entre dos fechas, con las dos unidades más grandes', () => {
+    expect(duracion(inicio, '2026-11-10T08:25:00Z', AHORA)).toBe('25 min');
+    expect(duracion(inicio, '2026-11-10T11:10:00Z', AHORA)).toBe('3 h 10 min');
+    expect(duracion(inicio, '2026-11-12T12:30:00Z', AHORA)).toBe('2 d 4 h');
+  });
+
+  it('si no ha terminado, cuenta hasta ahora', () => {
+    expect(duracion('2026-11-12T09:00:00Z', null, AHORA)).toBe('3 h');
+  });
+
+  it('menos de un minuto no se muestra como cero', () => {
+    expect(duracion(inicio, '2026-11-10T08:00:30Z', AHORA)).toBe('menos de 1 min');
+  });
+
+  it('un fin anterior al inicio (reloj desajustado) no da tiempo negativo', () => {
+    expect(duracion(inicio, '2026-11-10T07:00:00Z', AHORA)).toBe('menos de 1 min');
   });
 });
