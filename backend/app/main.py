@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 
 from app.database import Base, engine
@@ -27,6 +28,9 @@ ORIGENES_PERMITIDOS = [
     ).split(",")
     if origen.strip()
 ]
+# Con más de mil carros, la lista pesa cientos de KB y se consulta cada 30 segundos desde
+# el celular: comprimirla la reduce a una fracción.
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ORIGENES_PERMITIDOS,
