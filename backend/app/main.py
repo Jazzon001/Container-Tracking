@@ -6,14 +6,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 
-from app.database import Base, engine
 from app.errores import ErrorDeNegocio
+from app.migraciones import aplicar_migraciones
 from app.routers import auth, carros, mantenimiento, usuarios
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    Base.metadata.create_all(bind=engine)
+    aplicar_migraciones()
     yield
 
 

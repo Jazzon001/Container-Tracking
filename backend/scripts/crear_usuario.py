@@ -10,9 +10,9 @@ import argparse
 import getpass
 import sys
 
-from app import models  # noqa: F401  (importarlo registra las tablas en Base)
-from app.database import Base, SessionLocal, engine
+from app.database import SessionLocal
 from app.errores import ErrorDeNegocio
+from app.migraciones import aplicar_migraciones
 from app.models import Rol
 from app.services.usuarios import crear_usuario
 
@@ -31,7 +31,7 @@ def main() -> int:
         print("Las contraseñas no coinciden.")
         return 1
 
-    Base.metadata.create_all(bind=engine)
+    aplicar_migraciones()
     with SessionLocal() as db:
         try:
             usuario = crear_usuario(db, argumentos.username.strip(), password, Rol(argumentos.rol))

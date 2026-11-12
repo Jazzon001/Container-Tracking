@@ -10,9 +10,9 @@ import argparse
 import sys
 from pathlib import Path
 
-from app import models  # noqa: F401  (importarlo registra las tablas en Base)
-from app.database import Base, SessionLocal, engine
+from app.database import SessionLocal
 from app.errores import ErrorDeNegocio
+from app.migraciones import aplicar_migraciones
 from app.models import TipoCarro
 from app.services.importacion import importar_carros, leer_carros
 
@@ -32,7 +32,7 @@ def main() -> int:
         print(error)
         return 1
 
-    Base.metadata.create_all(bind=engine)
+    aplicar_migraciones()
     with SessionLocal() as db:
         resumen = importar_carros(db, lectura, argumentos.guardar)
 
