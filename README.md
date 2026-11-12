@@ -97,8 +97,8 @@ Backend (FastAPI + SQLAlchemy) y frontend (Angular) en desarrollo.
 |---|---|
 | `POST /auth/login` | Inicia sesión y devuelve un token y el rol del usuario |
 | `POST /usuarios` | Crea un usuario (solo administrador) |
-| `POST /carros` | Registra un carro |
-| `GET /carros` | Lista carros; filtros opcionales `?estado=disponible` y `?numero=C-001` |
+| `POST /carros` | Registra un carro (número y tipo: `poy`, `dty` o `twisting`) |
+| `GET /carros` | Lista carros; filtros opcionales `?estado=`, `?numero=` y `?tipo=` |
 | `GET /carros/{id}` | Consulta un carro |
 | `POST /carros/{id}/carga` | POY carga un carro con su contenedor elemento |
 | `POST /carros/{id}/entrega` | Almacén recibe el carro vacío |
@@ -107,6 +107,10 @@ Backend (FastAPI + SQLAlchemy) y frontend (Angular) en desarrollo.
 | `GET /carros/{id}/mantenimiento` | Historial de mantenimiento del carro |
 
 Con el servidor en marcha, la documentación interactiva está en `/docs`.
+
+### Carga inicial de carros
+
+Los carros se importan del Excel que se descarga de NOW (hoja `Containers`; el tipo de producto `C01`, `C02` y `C03` corresponde a carros de POY, DTY y Twisting). Desde `backend`: `python -m scripts.importar_carros <archivo.xlsx>` revisa sin guardar y, con `--guardar`, agrega los carros nuevos como disponibles; repetirlo no duplica. Los archivos con datos reales van en `datos/`, que no se sube a GitHub.
 
 ### Permisos por rol
 
