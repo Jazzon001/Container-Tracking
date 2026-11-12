@@ -91,7 +91,8 @@ Backend (FastAPI + SQLAlchemy) y frontend (Angular) en desarrollo.
 | 3. Reporte de tiempos por etapa | Pendiente |
 | Roles y autenticación | Inicio de sesión con JWT y permisos por rol implementados |
 | Migraciones de la base de datos | Implementadas (Alembic); se aplican solas al arrancar |
-| Despliegue (Supabase, Render, Vercel) | Preparado y documentado; pendiente de publicar |
+| Despliegue (Supabase, Render, Vercel) | Publicado: interfaz en Vercel, API en Render y base en Supabase |
+| PWA y uso sin conexión | Instalable, con service worker; sin conexión muestra lo último guardado (solo lectura) |
 | Frontend (Angular) | Inicio de sesión, lista de carros con resumen por estado, desde hace cuánto está cada carro así y actualización automática, carga de carros (POY, por número de carro y contenedor elemento), recepción (Almacén, solo por contenedor elemento) y mantenimiento (POY y DTY, por número de carro) con campo de escaneo |
 
 ### Endpoints disponibles
