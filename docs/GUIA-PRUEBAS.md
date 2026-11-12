@@ -79,15 +79,22 @@ La API lee la variable de entorno `DATABASE_URL`:
 
 **Nunca escribas la cadena de Supabase en un archivo del repositorio.** Contiene la contraseña y el checker de la universidad revisa que no haya secretos.
 
-**Cuando cambia el modelo de datos** (se agrega una columna o una tabla), tu base local `backend/container_tracking.db` queda con la estructura vieja y la API falla con un error como `no such column`. Todavía no hay migraciones, así que se recrea la base: detén la API, borra el archivo y vuelve a crear tus usuarios.
+### Migraciones: cómo cambiar el modelo de datos sin perder datos
 
-```powershell
-cd backend
-Remove-Item container_tracking.db
-python -m scripts.crear_usuario admin admin
-```
+El esquema de la base (tablas y columnas) se versiona con **migraciones** (Alembic), en `backend/migrations/versions/`. Cada migración es un archivo que dice cómo pasar de una versión de la base a la siguiente, así los cambios llegan igual a tu computadora y a Supabase **sin borrar nada**.
 
-Al arrancar la API otra vez, las tablas se crean solas y vacías (sin carros). Antes del despliegue hay que resolver cómo versionar los cambios del esquema (ver ADR 0001).
+- **La API aplica las migraciones sola al arrancar**, y los scripts (`crear_usuario`, `importar_carros`) también. No tienes que correr nada aparte.
+- **Si cambias un modelo** (por ejemplo, agregas una columna en `app/models.py`), crea su migración desde `backend`, con el entorno activo:
+
+  ```powershell
+  alembic revision --autogenerate -m "agregar columna observaciones a carros"
+  ```
+
+  Revisa el archivo nuevo en `migrations/versions/`: Alembic lo escribe comparando tus modelos con la base, pero conviene leerlo antes de subirlo. Se incluye en el commit junto con el cambio del modelo.
+- **Si olvidas la migración**, la prueba `test_el_esquema_de_las_migraciones_coincide_con_los_modelos` falla y te lo dice.
+- Comandos útiles: `alembic current` (qué versión tiene tu base), `alembic history` (todas las versiones) y `alembic downgrade -1` (deshace la última).
+
+> **Una sola vez:** si tu `container_tracking.db` es de antes de que existieran las migraciones, bórrala (con la API apagada) y vuelve a crear tu usuario y los carros: `Remove-Item container_tracking.db`. Desde ahí, las migraciones se encargan.
 
 ## 5.1 Seguridad: clave del token y primer administrador
 
