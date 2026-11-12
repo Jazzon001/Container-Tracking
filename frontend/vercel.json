@@ -3,13 +3,22 @@
   "framework": null,
   "buildCommand": "npm run build",
   "outputDirectory": "dist/container-tracking/browser",
+  "redirects": [
+    {
+      "source": "/(carros|carga|entrega|mantenimiento|historial)",
+      "missing": [{ "type": "cookie", "key": "ct_sesion" }],
+      "destination": "/login",
+      "permanent": false
+    }
+  ],
   "rewrites": [
     { "source": "/login", "destination": "/login.html" },
     { "source": "/carros", "destination": "/index.html" },
     { "source": "/carga", "destination": "/index.html" },
     { "source": "/entrega", "destination": "/index.html" },
     { "source": "/mantenimiento", "destination": "/index.html" },
-    { "source": "/historial", "destination": "/index.html" }
+    { "source": "/historial", "destination": "/index.html" },
+    { "source": "/(.*)", "destination": "/404.html" }
   ],
   "headers": [
     {
