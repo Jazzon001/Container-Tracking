@@ -3,7 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { API_URL } from './api.config';
 import { Carro } from './carro.model';
-import { CarroNoExiste, CarrosService } from './carros.service';
+import { CarroNoExiste, CarrosService, ContenedorNoEncontrado } from './carros.service';
 
 const CARRO: Carro = {
   id: 7,
@@ -111,12 +111,14 @@ describe('CarrosService', () => {
     });
   });
 
-  describe('entregarPorNumero', () => {
-    it('busca el carro por su número y luego lo entrega', () => {
-      let resultado: Carro | undefined;
-      servicio.entregarPorNumero('C-007').subscribe((carro) => (resultado = carro));
+  describe('entregarPorContenedor', () => {
+    const EN_TRANSITO: Carro = { ...CARRO, estado: 'en_transito', contenedor_elemento: '100123' };
 
-      http.expectOne('http://api.test/carros?numero=C-007').flush([{ ...CARRO, estado: 'en_transito' }]);
+    it('busca el carro por el contenedor elemento que lleva y luego lo entrega', () => {
+      let resultado: Carro | undefined;
+      servicio.entregarPorContenedor('100123').subscribe((carro) => (resultado = carro));
+
+      http.expectOne('http://api.test/carros?contenedor_elemento=100123').flush([EN_TRANSITO]);
 
       const entrega = http.expectOne('http://api.test/carros/7/entrega');
       expect(entrega.request.method).toBe('POST');
@@ -125,13 +127,35 @@ describe('CarrosService', () => {
       expect(resultado?.estado).toBe('disponible');
     });
 
-    it('falla con CarroNoExiste si el número no existe', () => {
+    it('no busca por el número del carro', () => {
+      servicio.entregarPorContenedor('100123').subscribe();
+
+      http.expectNone('http://api.test/carros?numero=100123');
+      http.expectOne('http://api.test/carros?contenedor_elemento=100123').flush([EN_TRANSITO]);
+      http.expectOne('http://api.test/carros/7/entrega').flush(CARRO);
+    });
+
+    it('falla con ContenedorNoEncontrado y no entrega nada si ningún carro lo lleva', () => {
       let error: unknown;
-      servicio.entregarPorNumero('C-999').subscribe({ error: (e) => (error = e) });
+      servicio.entregarPorContenedor('999999').subscribe({ error: (e) => (error = e) });
 
-      http.expectOne('http://api.test/carros?numero=C-999').flush([]);
+      http.expectOne('http://api.test/carros?contenedor_elemento=999999').flush([]);
 
-      expect(error).toBeInstanceOf(CarroNoExiste);
+      expect(error).toBeInstanceOf(ContenedorNoEncontrado);
+      expect((error as Error).message).toBe(
+        'No hay ningún carro en tránsito con el contenedor elemento 999999',
+      );
+      http.expectNone('http://api.test/carros/7/entrega');
+    });
+
+    it('deja pasar el error de la API', () => {
+      let estado = 0;
+      servicio.entregarPorContenedor('100123').subscribe({ error: (e) => (estado = e.status) });
+
+      http.expectOne('http://api.test/carros?contenedor_elemento=100123').flush([EN_TRANSITO]);
+      http.expectOne('http://api.test/carros/7/entrega').flush({}, { status: 409, statusText: 'Conflict' });
+
+      expect(estado).toBe(409);
     });
   });
 });

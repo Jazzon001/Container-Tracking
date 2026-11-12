@@ -11,6 +11,13 @@ export class CarroNoExiste extends Error {
   }
 }
 
+/** Ningún carro en tránsito lleva ese contenedor elemento. */
+export class ContenedorNoEncontrado extends Error {
+  constructor(contenedorElemento: string) {
+    super(`No hay ningún carro en tránsito con el contenedor elemento ${contenedorElemento}`);
+  }
+}
+
 @Injectable({ providedIn: 'root' })
 export class CarrosService {
   private readonly http = inject(HttpClient);
@@ -26,11 +33,7 @@ export class CarrosService {
    * Falla con CarroNoExiste si ese número no está registrado.
    */
   buscarPorNumero(numero: string): Observable<Carro> {
-    const params = new HttpParams().set('numero', numero);
-    return this.http.get<Carro[]>(`${this.apiUrl}/carros`, { params }).pipe(
-      map((carros) => carros[0]),
-      switchMap((carro) => (carro ? of(carro) : throwError(() => new CarroNoExiste(numero)))),
-    );
+    return this.buscarUno({ numero }, new CarroNoExiste(numero));
   }
 
   /** POY carga un carro: lo asocia con el código de su contenedor elemento. */
@@ -44,10 +47,25 @@ export class CarrosService {
     );
   }
 
-  /** Almacén recibe un carro vacío: queda disponible para POY. */
-  entregarPorNumero(numero: string): Observable<Carro> {
-    return this.buscarPorNumero(numero).pipe(
+  /**
+   * Almacén recibe un carro vacío. Se identifica por el contenedor elemento que llevaba,
+   * que es lo que lo hace único mientras está en tránsito. Queda disponible para POY.
+   */
+  entregarPorContenedor(contenedorElemento: string): Observable<Carro> {
+    return this.buscarUno(
+      { contenedor_elemento: contenedorElemento },
+      new ContenedorNoEncontrado(contenedorElemento),
+    ).pipe(
       switchMap((carro) => this.http.post<Carro>(`${this.apiUrl}/carros/${carro.id}/entrega`, {})),
+    );
+  }
+
+  /** Busca un carro por un campo exacto; si no hay ninguno, falla con el error indicado. */
+  private buscarUno(filtro: Record<string, string>, noEncontrado: Error): Observable<Carro> {
+    const params = new HttpParams({ fromObject: filtro });
+    return this.http.get<Carro[]>(`${this.apiUrl}/carros`, { params }).pipe(
+      map((carros) => carros[0]),
+      switchMap((carro) => (carro ? of(carro) : throwError(() => noEncontrado))),
     );
   }
 }
