@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+# Las pantallas privadas requieren iniciar sesión: no tiene sentido indexarlas.
+Disallow: /carros
+Disallow: /carga
+Disallow: /entrega
+Disallow: /mantenimiento
+Disallow: /historial
+
+Sitemap: https://container-tracking-lilac.vercel.app/sitemap.xml
