@@ -52,6 +52,27 @@ describe('CarrosService', () => {
     });
   });
 
+  describe('buscarPorNumero', () => {
+    it('devuelve el carro que tiene ese número', () => {
+      let resultado: Carro | undefined;
+      servicio.buscarPorNumero('C-007').subscribe((carro) => (resultado = carro));
+
+      const peticion = http.expectOne('http://api.test/carros?numero=C-007');
+      expect(peticion.request.method).toBe('GET');
+      peticion.flush([CARRO]);
+
+      expect(resultado).toEqual(CARRO);
+    });
+
+    it('falla con CarroNoExiste si no hay ningún carro con ese número', () => {
+      let error: unknown;
+      servicio.buscarPorNumero('C-999').subscribe({ error: (e) => (error = e) });
+      http.expectOne('http://api.test/carros?numero=C-999').flush([]);
+
+      expect(error).toBeInstanceOf(CarroNoExiste);
+    });
+  });
+
   describe('cargarPorNumero', () => {
     it('busca el carro por su número y luego lo carga con el contenedor', () => {
       let resultado: Carro | undefined;
