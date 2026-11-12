@@ -35,9 +35,12 @@ def listar_carros(
     estado: EstadoCarro | None = None,
     numero: str | None = None,
     tipo: TipoCarro | None = None,
+    contenedor_elemento: str | None = None,
     db: Session = Depends(get_db),
 ):
-    return servicio.listar_carros(db, estado, numero, tipo)
+    return servicio.listar_carros(
+        db, estado, numero, tipo, contenedor_elemento=contenedor_elemento
+    )
 
 
 @router.get("/{carro_id}", response_model=CarroOut)

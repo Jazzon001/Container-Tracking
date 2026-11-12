@@ -20,6 +20,7 @@ def listar_carros(
     estado: EstadoCarro | None = None,
     numero: str | None = None,
     tipo: TipoCarro | None = None,
+    contenedor_elemento: str | None = None,
 ) -> list[Carro]:
     consulta = select(Carro).order_by(Carro.id)
     if estado is not None:
@@ -28,6 +29,8 @@ def listar_carros(
         consulta = consulta.where(Carro.numero == numero)
     if tipo is not None:
         consulta = consulta.where(Carro.tipo == tipo)
+    if contenedor_elemento is not None:
+        consulta = consulta.where(Carro.contenedor_elemento == contenedor_elemento)
     return list(db.scalars(consulta).all())
 
 
