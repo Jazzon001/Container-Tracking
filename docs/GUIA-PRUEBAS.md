@@ -189,6 +189,29 @@ El proyecto trae tareas de VS Code (`.vscode/tasks.json`) para no escribir coman
 - Si cambiaste de computadora o borraste `backend/.venv`, vuelve a crearlo como en la sección 2.
 - Las rutas de las tareas son de **Windows** (`.venv\Scripts\python.exe`).
 
+## 5.4 Importar los carros desde el Excel de NOW
+
+El Excel (hoja `Containers`, con las columnas `IT` y `Code`) se deja en la carpeta `datos/` de la raíz del proyecto. Esa carpeta está en `.gitignore`: son datos reales de la empresa y **nunca deben subirse a GitHub**.
+
+Los tipos de producto de NOW son: `C01` = carros de POY, `C02` = carros de DTY y `C03` = carros de Twisting.
+
+Desde `backend`, con el entorno activo (y las dependencias al día: `pip install -r requirements-dev.txt`):
+
+```powershell
+python -m scripts.importar_carros ..\datos\Carros.xlsx
+```
+
+Sin `--guardar` **no escribe nada**: muestra cuántos carros nuevos habría por tipo, cuántos ya existen y las filas con problemas (con su número de fila). Si todo se ve bien:
+
+```powershell
+python -m scripts.importar_carros ..\datos\Carros.xlsx --guardar
+```
+
+- Todos los carros quedan **disponibles**.
+- Se puede repetir sin miedo: los carros que ya existen se omiten y no se modifican.
+- Si la base local es de antes de que existiera el tipo de carro, bórrala y vuelve a crear tu usuario (ver la sección 5).
+- Para cargarlos en producción (Supabase), el mismo comando se ejecuta con `DATABASE_URL` apuntando a esa base. Esa cadena es secreta: defínela solo en tu terminal, nunca en un archivo del proyecto.
+
 ## 6. Flujo de trabajo diario con Git
 
 Un cambio pequeño y completo por vez:
