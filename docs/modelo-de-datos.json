@@ -91,6 +91,53 @@
       ]
     },
     {
+      "nombre": "cargas",
+      "columnas": [
+        {
+          "nombre": "id",
+          "tipo": "INTEGER",
+          "nulo": false,
+          "clave_primaria": true,
+          "unico": false,
+          "clave_foranea": []
+        },
+        {
+          "nombre": "carro_id",
+          "tipo": "INTEGER",
+          "nulo": false,
+          "clave_primaria": false,
+          "unico": false,
+          "clave_foranea": [
+            "carros.id"
+          ]
+        },
+        {
+          "nombre": "contenedor_elemento",
+          "tipo": "VARCHAR(50)",
+          "nulo": false,
+          "clave_primaria": false,
+          "unico": false,
+          "clave_foranea": []
+        },
+        {
+          "nombre": "cargada_en",
+          "tipo": "DATETIME",
+          "nulo": false,
+          "clave_primaria": false,
+          "unico": false,
+          "clave_foranea": []
+        },
+        {
+          "nombre": "recibida_en",
+          "tipo": "DATETIME",
+          "nulo": true,
+          "clave_primaria": false,
+          "unico": false,
+          "clave_foranea": []
+        }
+      ]
+    },
+    {
       "nombre": "mantenimientos",
       "columnas": [
         {
