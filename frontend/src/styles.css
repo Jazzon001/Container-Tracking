@@ -139,6 +139,40 @@ button:hover {
   outline-offset: 2px;
 }
 
+/* Pantallas pequeñas (celular): menos márgenes y títulos más compactos */
+@media (max-width: 30rem) {
+  h1 {
+    font-size: 1.25rem;
+  }
+
+  form {
+    max-width: none;
+    margin: 0.5rem 0;
+    padding: 1rem;
+  }
+}
+
+/* Pantallas medianas y grandes (tableta, computadora): texto algo mayor y más aire */
+@media (min-width: 48rem) {
+  body {
+    font-size: 1.0625rem;
+  }
+
+  form {
+    margin-top: 3rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 [role='alert'] {
   margin: 1rem 0 0;
   font-weight: 500;
