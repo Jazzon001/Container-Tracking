@@ -13,6 +13,7 @@ import { AuthService } from './auth.service';
           <a routerLink="/carros" routerLinkActive="activa">Carros</a>
           @if (auth.puede('poy')) { <a routerLink="/carga" routerLinkActive="activa">Cargar</a> }
           @if (auth.puede('almacen')) { <a routerLink="/entrega" routerLinkActive="activa">Recibir</a> }
+          @if (auth.puede('poy', 'dty')) { <a routerLink="/mantenimiento" routerLinkActive="activa">Mantenimiento</a> }
         </nav>
         <button type="button" class="secundario" (click)="salir()">Salir</button>
       </header>
@@ -27,7 +28,7 @@ import { AuthService } from './auth.service';
       background: var(--color-superficie); border-bottom: 1px solid var(--color-borde);
     }
     .marca { font-weight: 700; letter-spacing: 0.02em; }
-    nav { display: flex; gap: 0.25rem; }
+    nav { display: flex; flex-wrap: wrap; gap: 0.25rem; }
     nav a {
       display: inline-flex; align-items: center; min-height: 2.75rem; padding: 0 0.75rem;
       color: var(--color-texto); text-decoration: none; font-weight: 500;
