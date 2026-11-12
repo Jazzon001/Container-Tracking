@@ -20,6 +20,14 @@
           "clave_foranea": []
         },
         {
+          "nombre": "tipo",
+          "tipo": "VARCHAR(8)",
+          "nulo": false,
+          "clave_primaria": false,
+          "unico": false,
+          "clave_foranea": []
+        },
+        {
           "nombre": "estado",
           "tipo": "VARCHAR(16)",
           "nulo": false,
