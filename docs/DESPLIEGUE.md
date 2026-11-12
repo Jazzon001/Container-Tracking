@@ -107,6 +107,27 @@ El navegador solo deja que tu página llame a la API si la API lo permite (CORS)
 - Las páginas `/docs` y `/openapi.json` de la API son públicas. Muestran la forma de la API, no datos, y todas las operaciones exigen iniciar sesión.
 - Vercel y Render dan HTTPS automáticamente: la contraseña y el token viajan cifrados.
 
+## Qué se comprueba en el sitio publicado
+
+La verificación del curso (entregable "Producto publicado en un dominio real") revisa la dirección de Vercel, la pantalla de inicio de sesión, una pantalla privada y el `/health` de la API. Esto es lo que cubre cada parte del repositorio:
+
+| Se comprueba | Dónde está |
+|---|---|
+| PWA: manifiesto, service worker e íconos | `frontend/public/manifest.webmanifest`, `ngsw-config.json`, `frontend/public/icons/` |
+| Responsive con `@media` | `frontend/src/styles.css` |
+| SEO y Open Graph | `frontend/src/index.html` y la imagen `icons/og-image.png` |
+| Cabeceras de seguridad | `frontend/vercel.json` |
+| 404 manejado | `frontend/vercel.json` (rutas conocidas) y `frontend/public/404.html` |
+| `robots.txt` y mapa del sitio | `frontend/public/robots.txt` y `sitemap.xml` |
+| Inicio de sesión real | La pantalla `/login` |
+| Portal privado que no filtra contenido sin sesión | `/carros`: sin sesión devuelve solo el cascarón de la aplicación y redirige al login; los datos vienen de la API y exigen token |
+| Healthcheck de la API en JSON | `https://<tu-api>.onrender.com/health` |
+| Código de verificación publicado | `README.md`, la etiqueta `meta name="verificacion"` y `/verificacion.txt` |
+
+**Antes de verificar**, abre `https://<tu-api>.onrender.com/health` para despertar la API (Render gratis duerme): si está dormida, el chequeo puede agotar el tiempo.
+
+**Si cambias de dominio**, actualiza las direcciones escritas en estos archivos: `frontend/src/index.html`, `frontend/ngsw-config.json`, `frontend/vercel.json` (política de seguridad), `frontend/public/robots.txt` y `frontend/public/sitemap.xml`.
+
 ## Dominio propio (opcional)
 
 Vercel y Render permiten asignar un dominio propio (por ejemplo `carros.tuempresa.com`) desde su panel. Si lo haces, actualiza `apiUrl` en `environment.production.ts` y `CORS_ORIGINS` en Render con las direcciones nuevas.

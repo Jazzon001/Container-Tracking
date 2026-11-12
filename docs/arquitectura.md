@@ -95,6 +95,7 @@ Los routers solo manejan HTTP. Las reglas de negocio están en los servicios, qu
 - [ADR 0003: Autenticación con JWT propio y autorización por roles](adr/0003-autenticacion-jwt-y-roles.md)
 - [ADR 0004: Migraciones con Alembic y despliegue en Render, Vercel y Supabase](adr/0004-migraciones-y-despliegue.md)
 - [ADR 0005: Historial de cargas como tabla propia](adr/0005-historial-de-cargas.md)
+- [ADR 0006: PWA, uso sin conexión y endurecimiento del sitio publicado](adr/0006-pwa-y-endurecimiento-del-sitio.md)
 
 La guía paso a paso para publicar el sistema está en [DESPLIEGUE.md](DESPLIEGUE.md).
 
