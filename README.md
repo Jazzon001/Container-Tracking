@@ -87,6 +87,7 @@ Backend (FastAPI + SQLAlchemy) y frontend (Angular) en desarrollo.
 |---|---|
 | 1. Control de carros en tiempo real | Carga, entrega y consulta de carros disponibles implementadas |
 | 2. Mantenimiento de carros | Entrada, salida e historial implementados |
+| Historial de cargas (base del reporte de tiempos) | Cada viaje de un carro se registra y se consulta en la pantalla Historial |
 | 3. Reporte de tiempos por etapa | Pendiente |
 | Roles y autenticación | Inicio de sesión con JWT y permisos por rol implementados |
 | Migraciones de la base de datos | Implementadas (Alembic); se aplican solas al arrancar |
@@ -104,6 +105,7 @@ Backend (FastAPI + SQLAlchemy) y frontend (Angular) en desarrollo.
 | `GET /carros/{id}` | Consulta un carro |
 | `POST /carros/{id}/carga` | POY carga un carro con su contenedor elemento |
 | `POST /carros/{id}/entrega` | Almacén recibe el carro vacío |
+| `GET /cargas` | Historial de viajes (carro, contenedor elemento, cargada y recibida); filtros `?numero=` y `?contenedor_elemento=`, y `?limite=` |
 | `POST /carros/{id}/mantenimiento` | Un carro disponible entra a mantenimiento |
 | `POST /carros/{id}/mantenimiento/salida` | El carro sale de mantenimiento |
 | `GET /carros/{id}/mantenimiento` | Historial de mantenimiento del carro |
