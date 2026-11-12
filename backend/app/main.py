@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse
 
 from app.errores import ErrorDeNegocio
 from app.migraciones import aplicar_migraciones
-from app.routers import auth, carros, mantenimiento, usuarios
+from app.routers import auth, cargas, carros, mantenimiento, usuarios
 
 
 @asynccontextmanager
@@ -40,6 +40,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(usuarios.router)
 app.include_router(carros.router)
+app.include_router(cargas.router)
 app.include_router(mantenimiento.router)
 
 

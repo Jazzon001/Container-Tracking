@@ -12,6 +12,7 @@ RUTAS_PROTEGIDAS = [
     ("post", "/carros/1/mantenimiento/salida"),
     ("get", "/carros/1/mantenimiento"),
     ("post", "/usuarios"),
+    ("get", "/cargas"),
 ]
 
 

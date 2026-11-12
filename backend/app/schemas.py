@@ -42,6 +42,17 @@ class CarroOut(BaseModel):
     estado_desde: FechaUTC
 
 
+class CargaOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    carro_id: int
+    carro_numero: str
+    contenedor_elemento: str
+    cargada_en: FechaUTC
+    recibida_en: FechaUTC | None
+
+
 class MantenimientoOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
