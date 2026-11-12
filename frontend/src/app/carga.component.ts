@@ -1,7 +1,7 @@
-import { Component, ElementRef, afterNextRender, inject, signal, viewChild } from '@angular/core';
+import { Component, ElementRef, afterNextRender, inject, viewChild } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { mensajeDeApi } from './api-error';
 import { CarrosService } from './carros.service';
+import { Operacion } from './operacion';
 
 @Component({
   selector: 'app-carga',
@@ -31,10 +31,10 @@ import { CarrosService } from './carros.service';
           [formControl]="codigo"
         />
       </label>
-      <button type="submit" [disabled]="enviando()">Cargar carro</button>
+      <button type="submit" [disabled]="operacion.enviando()">Cargar carro</button>
 
-      @if (mensaje()) { <p role="status">{{ mensaje() }}</p> }
-      @if (error()) { <p role="alert">{{ error() }}</p> }
+      @if (operacion.mensaje()) { <p role="status">{{ operacion.mensaje() }}</p> }
+      @if (operacion.error()) { <p role="alert">{{ operacion.error() }}</p> }
     </form>
   `,
   styles: `
@@ -46,14 +46,12 @@ export class CargaComponent {
   private readonly campoCarro = viewChild.required<ElementRef<HTMLInputElement>>('carro');
   private readonly campoContenedor = viewChild.required<ElementRef<HTMLInputElement>>('contenedor');
 
+  readonly operacion = new Operacion();
   // Controles reactivos: al vaciarlos, el campo se limpia en el acto. Con un lector de
   // código de barras (que escribe muy rápido) no se puede depender de que la pantalla
   // se refresque entre el escaneo y el envío.
   readonly numero = new FormControl('', { nonNullable: true });
   readonly codigo = new FormControl('', { nonNullable: true });
-  readonly mensaje = signal('');
-  readonly error = signal('');
-  readonly enviando = signal(false);
 
   constructor() {
     // Listo para escanear apenas se abre la pantalla.
@@ -70,26 +68,20 @@ export class CargaComponent {
     evento.preventDefault();
     const numero = this.numero.value.trim();
     const codigo = this.codigo.value.trim();
-    this.mensaje.set('');
     if (!numero || !codigo) {
-      this.error.set('Escribe o escanea el carro y el contenedor elemento.');
+      this.operacion.fallar('Escribe o escanea el carro y el contenedor elemento.');
       return;
     }
 
-    this.error.set('');
-    this.enviando.set(true);
-    this.carros.cargarPorNumero(numero, codigo).subscribe({
-      next: (carro) => {
-        this.mensaje.set(`Carro ${carro.numero} cargado con el contenedor ${carro.contenedor_elemento}`);
+    this.operacion.ejecutar(
+      this.carros.cargarPorNumero(numero, codigo),
+      (carro) => `Carro ${carro.numero} cargado con el contenedor ${carro.contenedor_elemento}`,
+      'No se pudo cargar el carro',
+      () => {
         this.numero.reset();
         this.codigo.reset();
-        this.enviando.set(false);
         this.campoCarro().nativeElement.focus();
       },
-      error: (fallo) => {
-        this.error.set(mensajeDeApi(fallo, 'No se pudo cargar el carro'));
-        this.enviando.set(false);
-      },
-    });
+    );
   }
 }
