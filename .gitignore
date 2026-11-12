@@ -14,12 +14,18 @@ htmlcov/
 .env.*
 !.env.example
 
+# Datos reales de la empresa (listados de carros, Excel de NOW): nunca se suben a GitHub
+datos/
+
 # Node / Angular
 node_modules/
 dist/
 .angular/
 
 # Editor / sistema
-.vscode/
+# Se versionan solo las tareas y ajustes compartidos del proyecto en VS Code.
+.vscode/*
+!.vscode/tasks.json
+!.vscode/settings.json
 .idea/
 .DS_Store
