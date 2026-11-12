@@ -13,7 +13,7 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(withInterceptors([authInterceptor])),
     // El service worker permite instalar la app y usarla sin conexión. Solo se activa en
     // producción: en desarrollo cacheraría los archivos y ocultaría los cambios al recargar.
-    provideServiceWorker('ngsw-worker.js', {
+    provideServiceWorker('sw.js', {
       enabled: !isDevMode(),
       registrationStrategy: 'registerWhenStable:30000',
     }),
