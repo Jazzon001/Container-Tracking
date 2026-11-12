@@ -93,6 +93,9 @@ Los routers solo manejan HTTP. Las reglas de negocio están en los servicios, qu
 - [ADR 0001: Base de datos configurable por entorno](adr/0001-base-de-datos-por-entorno.md)
 - [ADR 0002: Capa de servicio y transiciones de estado atómicas](adr/0002-transiciones-atomicas-de-estado.md)
 - [ADR 0003: Autenticación con JWT propio y autorización por roles](adr/0003-autenticacion-jwt-y-roles.md)
+- [ADR 0004: Migraciones con Alembic y despliegue en Render, Vercel y Supabase](adr/0004-migraciones-y-despliegue.md)
+
+La guía paso a paso para publicar el sistema está en [DESPLIEGUE.md](DESPLIEGUE.md).
 
 ## Pendiente de incorporar
 
