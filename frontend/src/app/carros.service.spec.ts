@@ -5,7 +5,13 @@ import { API_URL } from './api.config';
 import { Carro } from './carro.model';
 import { CarroNoExiste, CarrosService } from './carros.service';
 
-const CARRO: Carro = { id: 7, numero: 'C-007', estado: 'disponible', contenedor_elemento: null };
+const CARRO: Carro = {
+  id: 7,
+  numero: 'C-007',
+  estado: 'disponible',
+  contenedor_elemento: null,
+  estado_desde: '2026-11-12T12:00:00Z',
+};
 
 describe('CarrosService', () => {
   let servicio: CarrosService;

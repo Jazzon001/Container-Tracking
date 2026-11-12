@@ -5,7 +5,13 @@ import { Carro } from './carro.model';
 import { CarroNoExiste, CarrosService } from './carros.service';
 import { CargaComponent } from './carga.component';
 
-const CARGADO: Carro = { id: 1, numero: 'C-001', estado: 'en_transito', contenedor_elemento: '100123' };
+const CARGADO: Carro = {
+  id: 1,
+  numero: 'C-001',
+  estado: 'en_transito',
+  contenedor_elemento: '100123',
+  estado_desde: '2026-11-12T12:00:00Z',
+};
 
 describe('CargaComponent', () => {
   let fixture: ComponentFixture<CargaComponent>;

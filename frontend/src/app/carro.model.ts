@@ -5,6 +5,8 @@ export interface Carro {
   numero: string;
   estado: EstadoCarro;
   contenedor_elemento: string | null;
+  /** Fecha y hora (UTC) en que el carro pasó a su estado actual. */
+  estado_desde: string;
 }
 
 /** Texto que ve el usuario para cada estado. Sus claves son la lista de estados. */
