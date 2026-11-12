@@ -1,6 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from './auth.service';
+import { ConexionService } from './conexion.service';
 
 @Component({
   selector: 'app-root',
@@ -18,6 +19,11 @@ import { AuthService } from './auth.service';
         </nav>
         <button type="button" class="secundario" (click)="salir()">Salir</button>
       </header>
+    }
+    @if (!conexion.enLinea()) {
+      <p class="sin-conexion" role="status">
+        Sin conexión: verás los últimos datos guardados y no podrás registrar operaciones hasta recuperarla.
+      </p>
     }
     <main><router-outlet /></main>
   `,
@@ -38,10 +44,15 @@ import { AuthService } from './auth.service';
     nav a.activa { border-bottom-color: var(--color-primario); font-weight: 700; }
     @media (max-width: 30rem) { nav { order: 3; width: 100%; } }
     main { max-width: 40rem; margin: 0 auto; padding: 1rem; }
+    .sin-conexion {
+      margin: 0; padding: 0.5rem 1rem; text-align: center; font-weight: 500;
+      color: var(--en-mantenimiento-texto); background: var(--en-mantenimiento-fondo);
+    }
   `,
 })
 export class App {
   protected readonly auth = inject(AuthService);
+  protected readonly conexion = inject(ConexionService);
   private readonly router = inject(Router);
 
   salir(): void {

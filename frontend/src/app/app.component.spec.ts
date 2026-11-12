@@ -54,6 +54,35 @@ describe('App', () => {
     expect(navegar).toHaveBeenCalledWith('/login');
   });
 
+  describe('aviso de falta de conexión', () => {
+    const aviso = () => el.querySelector('.sin-conexion');
+
+    afterEach(() => window.dispatchEvent(new Event('online')));
+
+    it('no muestra el aviso si hay conexión', async () => {
+      await crear(true, 'poy');
+      expect(aviso()).toBeNull();
+    });
+
+    it('muestra el aviso cuando se pierde la conexión, también en el login', async () => {
+      await crear(false);
+      window.dispatchEvent(new Event('offline'));
+      fixture.detectChanges();
+
+      expect(aviso()?.textContent).toContain('Sin conexión');
+    });
+
+    it('quita el aviso cuando se recupera', async () => {
+      await crear(true, 'poy');
+      window.dispatchEvent(new Event('offline'));
+      fixture.detectChanges();
+      window.dispatchEvent(new Event('online'));
+      fixture.detectChanges();
+
+      expect(aviso()).toBeNull();
+    });
+  });
+
   describe('navegación según el rol', () => {
     it('POY ve Carros, Cargar, Mantenimiento e Historial', async () => {
       await crear(true, 'poy');

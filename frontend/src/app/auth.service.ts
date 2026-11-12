@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import { API_URL } from './api.config';
+import { olvidarDatosEnCache } from './cache-offline';
 
 export type Rol = 'poy' | 'almacen' | 'dty' | 'twisting' | 'admin';
 
@@ -52,6 +53,8 @@ export class AuthService {
 
   logout(): void {
     this.guardar(null, null);
+    // Los datos guardados para uso sin conexión no deben quedar a la vista del siguiente usuario.
+    void olvidarDatosEnCache();
   }
 
   /**

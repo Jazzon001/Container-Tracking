@@ -1,6 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
+import { vi } from 'vitest';
 import { API_URL } from './api.config';
 import { AuthService } from './auth.service';
 
@@ -83,6 +84,21 @@ describe('AuthService', () => {
     expect(auth.rol()).toBeNull();
     expect(localStorage.getItem('container_tracking_token')).toBeNull();
     expect(localStorage.getItem('container_tracking_rol')).toBeNull();
+  });
+
+  it('al cerrar sesión borra los datos guardados para uso sin conexión', async () => {
+    const borrar = vi.fn().mockResolvedValue(true);
+    vi.stubGlobal('caches', {
+      keys: vi.fn().mockResolvedValue(['ngsw:/:data:dynamic:consultas-de-la-api:cache']),
+      delete: borrar,
+    });
+    const auth = crearServicio();
+
+    auth.logout();
+    await new Promise((resolver) => setTimeout(resolver));
+
+    expect(borrar).toHaveBeenCalledWith('ngsw:/:data:dynamic:consultas-de-la-api:cache');
+    vi.unstubAllGlobals();
   });
 
   describe('puede', () => {
