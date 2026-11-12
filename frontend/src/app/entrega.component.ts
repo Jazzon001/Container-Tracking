@@ -8,17 +8,18 @@ import { Operacion } from './operacion';
   imports: [ReactiveFormsModule],
   template: `
     <h1>Recibir carro</h1>
-    <p class="ayuda">Escanea o escribe el número del carro que regresa vacío.</p>
+    <p class="ayuda">
+      Escanea o escribe el código del contenedor elemento del carro que regresa vacío.
+    </p>
 
     <form (submit)="enviar($event)">
       <label>
-        Carro
+        Contenedor elemento
         <input
-          #carro
-          name="carro"
+          #contenedor
+          name="contenedor"
           autocomplete="off"
-          autocapitalize="characters"
-          [formControl]="numero"
+          [formControl]="codigo"
         />
       </label>
       <button type="submit" [disabled]="operacion.enviando()">Recibir carro</button>
@@ -33,33 +34,33 @@ import { Operacion } from './operacion';
 })
 export class EntregaComponent {
   private readonly carros = inject(CarrosService);
-  private readonly campoCarro = viewChild.required<ElementRef<HTMLInputElement>>('carro');
+  private readonly campoContenedor = viewChild.required<ElementRef<HTMLInputElement>>('contenedor');
 
   readonly operacion = new Operacion();
   // Control reactivo: al vaciarlo, el campo se limpia en el acto (ver CargaComponent).
-  readonly numero = new FormControl('', { nonNullable: true });
+  readonly codigo = new FormControl('', { nonNullable: true });
 
   constructor() {
     // Listo para escanear apenas se abre la pantalla.
-    afterNextRender(() => this.campoCarro().nativeElement.focus());
+    afterNextRender(() => this.campoContenedor().nativeElement.focus());
   }
 
   /** Con un solo campo, el Enter del lector envía el formulario por sí mismo. */
   enviar(evento: Event): void {
     evento.preventDefault();
-    const numero = this.numero.value.trim();
-    if (!numero) {
-      this.operacion.fallar('Escribe o escanea el número del carro.');
+    const codigo = this.codigo.value.trim();
+    if (!codigo) {
+      this.operacion.fallar('Escribe o escanea el código del contenedor elemento.');
       return;
     }
 
     this.operacion.ejecutar(
-      this.carros.entregarPorNumero(numero),
-      (carro) => `Carro ${carro.numero} recibido: ya está disponible para POY`,
+      this.carros.entregarPorContenedor(codigo),
+      (carro) => `Carro ${carro.numero} recibido (contenedor ${codigo}): ya está disponible para POY`,
       'No se pudo recibir el carro',
       () => {
-        this.numero.reset();
-        this.campoCarro().nativeElement.focus();
+        this.codigo.reset();
+        this.campoContenedor().nativeElement.focus();
       },
     );
   }

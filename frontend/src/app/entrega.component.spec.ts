@@ -2,12 +2,12 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { vi } from 'vitest';
 import { Carro } from './carro.model';
-import { CarroNoExiste, CarrosService } from './carros.service';
+import { CarrosService, ContenedorNoEncontrado } from './carros.service';
 import { EntregaComponent } from './entrega.component';
 
 const DISPONIBLE: Carro = {
   id: 1,
-  numero: 'C-001',
+  numero: 'P001A',
   tipo: 'poy',
   estado: 'disponible',
   contenedor_elemento: null,
@@ -17,13 +17,13 @@ const DISPONIBLE: Carro = {
 describe('EntregaComponent', () => {
   let fixture: ComponentFixture<EntregaComponent>;
   let el: HTMLElement;
-  let entregarPorNumero: ReturnType<typeof vi.fn>;
+  let entregarPorContenedor: ReturnType<typeof vi.fn>;
 
   async function crear(respuesta: unknown = of(DISPONIBLE)) {
-    entregarPorNumero = vi.fn().mockReturnValue(respuesta);
+    entregarPorContenedor = vi.fn().mockReturnValue(respuesta);
     await TestBed.configureTestingModule({
       imports: [EntregaComponent],
-      providers: [{ provide: CarrosService, useValue: { entregarPorNumero } }],
+      providers: [{ provide: CarrosService, useValue: { entregarPorContenedor } }],
     }).compileComponents();
     fixture = TestBed.createComponent(EntregaComponent);
     fixture.detectChanges();
@@ -31,7 +31,7 @@ describe('EntregaComponent', () => {
     el = fixture.nativeElement;
   }
 
-  const campo = () => el.querySelector<HTMLInputElement>('input[name="carro"]')!;
+  const campo = () => el.querySelector<HTMLInputElement>('input[name="contenedor"]')!;
 
   function escribir(valor: string) {
     campo().value = valor;
@@ -44,52 +44,72 @@ describe('EntregaComponent', () => {
     await fixture.whenStable();
   }
 
-  it('abre con el cursor en el campo del carro, listo para escanear', async () => {
+  it('pide solo el contenedor elemento, no el número del carro', async () => {
+    await crear();
+    expect(el.querySelectorAll('input').length).toBe(1);
+    expect(el.querySelector('label')?.textContent).toContain('Contenedor elemento');
+    expect(el.querySelector('input[name="carro"]')).toBeNull();
+  });
+
+  it('abre con el cursor en el campo, listo para escanear', async () => {
     await crear();
     expect(document.activeElement).toBe(campo());
   });
 
-  it('recibe el carro con el número escrito, sin espacios sobrantes', async () => {
+  it('recibe el carro con el contenedor escrito, sin espacios sobrantes', async () => {
     await crear();
-    escribir('  C-001 ');
+    escribir('  100123 ');
     await enviar();
 
-    expect(entregarPorNumero).toHaveBeenCalledWith('C-001');
+    expect(entregarPorContenedor).toHaveBeenCalledWith('100123');
   });
 
-  it('confirma la recepción, limpia el campo y vuelve a él', async () => {
+  it('confirma con el número del carro que quedó libre, limpia el campo y vuelve a él', async () => {
     await crear();
-    escribir('C-001');
+    escribir('100123');
     await enviar();
 
-    expect(el.querySelector('[role="status"]')?.textContent).toContain('Carro C-001 recibido');
+    const mensaje = el.querySelector('[role="status"]')?.textContent;
+    expect(mensaje).toContain('Carro P001A recibido');
+    expect(mensaje).toContain('contenedor 100123');
     expect(campo().value).toBe('');
     expect(document.activeElement).toBe(campo());
   });
 
-  it('pide un número si el campo está vacío', async () => {
+  it('vacía el campo aunque el escaneo y el envío ocurran sin refrescar la pantalla entre medio', async () => {
+    await crear();
+    escribir('100123');
+    el.querySelector<HTMLFormElement>('form')!.dispatchEvent(new Event('submit'));
+
+    expect(campo().value).toBe('');
+  });
+
+  it('pide un código si el campo está vacío', async () => {
     await crear();
     await enviar();
 
-    expect(entregarPorNumero).not.toHaveBeenCalled();
+    expect(entregarPorContenedor).not.toHaveBeenCalled();
     expect(el.querySelector('[role="alert"]')?.textContent).toContain('Escribe o escanea');
   });
 
-  it('muestra el mensaje de la API si el carro no está en tránsito', async () => {
+  it('muestra el mensaje de la API y conserva lo escrito si no se puede recibir', async () => {
     const fallo = { status: 409, error: { detail: 'El carro no está en tránsito' } };
     await crear(throwError(() => fallo));
-    escribir('C-001');
+    escribir('100123');
     await enviar();
 
     expect(el.querySelector('[role="alert"]')?.textContent).toContain('El carro no está en tránsito');
     expect(el.querySelector('[role="status"]')).toBeNull();
+    expect(campo().value).toBe('100123');
   });
 
-  it('avisa si el carro no existe', async () => {
-    await crear(throwError(() => new CarroNoExiste('C-999')));
-    escribir('C-999');
+  it('avisa si ningún carro en tránsito lleva ese contenedor', async () => {
+    await crear(throwError(() => new ContenedorNoEncontrado('999999')));
+    escribir('999999');
     await enviar();
 
-    expect(el.querySelector('[role="alert"]')?.textContent).toContain('No existe un carro con el número C-999');
+    expect(el.querySelector('[role="alert"]')?.textContent).toContain(
+      'No hay ningún carro en tránsito con el contenedor elemento 999999',
+    );
   });
 });
