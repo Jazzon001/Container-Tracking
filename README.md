@@ -89,7 +89,7 @@ Backend (FastAPI + SQLAlchemy) y frontend (Angular) en desarrollo.
 | 2. Mantenimiento de carros | Entrada, salida e historial implementados |
 | 3. Reporte de tiempos por etapa | Pendiente |
 | Roles y autenticación | Inicio de sesión con JWT y permisos por rol implementados |
-| Frontend (Angular) | Inicio de sesión, lista de carros con resumen por estado, desde hace cuánto está cada carro así y actualización automática, carga de carros (POY) y recepción (Almacén) con campo de escaneo |
+| Frontend (Angular) | Inicio de sesión, lista de carros con resumen por estado, desde hace cuánto está cada carro así y actualización automática, carga de carros (POY), recepción (Almacén) y mantenimiento (POY y DTY) con campo de escaneo |
 
 ### Endpoints disponibles
 
