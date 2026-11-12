@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.dependencias import requiere_roles, usuario_actual
-from app.models import Carro, EstadoCarro, Rol
+from app.models import Carro, EstadoCarro, Rol, TipoCarro
 from app.schemas import CargaCarro, CarroCreate, CarroOut
 from app.services import carros as servicio
 
@@ -20,7 +20,7 @@ router = APIRouter(prefix="/carros", tags=["carros"], dependencies=[Depends(usua
     dependencies=[Depends(requiere_roles(Rol.ADMIN))],
 )
 def crear_carro(datos: CarroCreate, db: Session = Depends(get_db)):
-    carro = Carro(numero=datos.numero)
+    carro = Carro(numero=datos.numero, tipo=datos.tipo)
     db.add(carro)
     try:
         db.commit()
@@ -34,9 +34,10 @@ def crear_carro(datos: CarroCreate, db: Session = Depends(get_db)):
 def listar_carros(
     estado: EstadoCarro | None = None,
     numero: str | None = None,
+    tipo: TipoCarro | None = None,
     db: Session = Depends(get_db),
 ):
-    return servicio.listar_carros(db, estado, numero)
+    return servicio.listar_carros(db, estado, numero, tipo)
 
 
 @router.get("/{carro_id}", response_model=CarroOut)

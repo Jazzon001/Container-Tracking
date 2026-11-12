@@ -5,7 +5,7 @@ from app.models import Rol
 
 OPERACIONES = {
     "crear_carro": (
-        lambda c, id: c.post("/carros", json={"numero": "C-999"}),
+        lambda c, id: c.post("/carros", json={"numero": "C-999", "tipo": "poy"}),
         {Rol.ADMIN},
     ),
     "cargar": (

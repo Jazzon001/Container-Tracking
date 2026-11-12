@@ -3,7 +3,7 @@ from typing import Annotated
 
 from pydantic import AfterValidator, BaseModel, ConfigDict, StringConstraints
 
-from app.models import EstadoCarro, Rol
+from app.models import EstadoCarro, Rol, TipoCarro
 
 
 def _como_utc(fecha: datetime) -> datetime:
@@ -24,6 +24,7 @@ Password = Annotated[str, StringConstraints(min_length=8, max_length=128)]
 
 class CarroCreate(BaseModel):
     numero: Codigo
+    tipo: TipoCarro
 
 
 class CargaCarro(BaseModel):
@@ -35,6 +36,7 @@ class CarroOut(BaseModel):
 
     id: int
     numero: str
+    tipo: TipoCarro
     estado: EstadoCarro
     contenedor_elemento: str | None
     estado_desde: FechaUTC

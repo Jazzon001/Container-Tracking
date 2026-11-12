@@ -88,8 +88,8 @@ def cliente_anonimo(sesion_de_pruebas):
 def crear_carro(client):
     """Crea un carro y devuelve su JSON."""
 
-    def _crear(numero="C-001"):
-        return client.post("/carros", json={"numero": numero}).json()
+    def _crear(numero="C-001", tipo="poy"):
+        return client.post("/carros", json={"numero": numero, "tipo": tipo}).json()
 
     return _crear
 

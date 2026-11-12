@@ -4,7 +4,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.errores import CarroNoEncontrado, ContenedorEnUso, EstadoInvalido
-from app.models import Carro, EstadoCarro
+from app.models import Carro, EstadoCarro, TipoCarro
 from app.tiempo import ahora
 
 
@@ -16,13 +16,18 @@ def obtener_carro(db: Session, carro_id: int) -> Carro:
 
 
 def listar_carros(
-    db: Session, estado: EstadoCarro | None = None, numero: str | None = None
+    db: Session,
+    estado: EstadoCarro | None = None,
+    numero: str | None = None,
+    tipo: TipoCarro | None = None,
 ) -> list[Carro]:
     consulta = select(Carro).order_by(Carro.id)
     if estado is not None:
         consulta = consulta.where(Carro.estado == estado)
     if numero is not None:
         consulta = consulta.where(Carro.numero == numero)
+    if tipo is not None:
+        consulta = consulta.where(Carro.tipo == tipo)
     return list(db.scalars(consulta).all())
 
 

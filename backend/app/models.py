@@ -14,6 +14,14 @@ class EstadoCarro(str, enum.Enum):
     EN_MANTENIMIENTO = "en_mantenimiento"
 
 
+class TipoCarro(str, enum.Enum):
+    """Proceso al que pertenece el carro. En NOW es el tipo de producto (C01, C02, C03)."""
+
+    POY = "poy"
+    DTY = "dty"
+    TWISTING = "twisting"
+
+
 class Rol(str, enum.Enum):
     POY = "poy"
     ALMACEN = "almacen"
@@ -29,6 +37,7 @@ class Carro(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     numero: Mapped[str] = mapped_column(String(50), unique=True, index=True)
+    tipo: Mapped[TipoCarro] = mapped_column(Enum(TipoCarro), index=True)
     estado: Mapped[EstadoCarro] = mapped_column(
         Enum(EstadoCarro), default=EstadoCarro.DISPONIBLE
     )
