@@ -1,7 +1,15 @@
 import { Component, InjectionToken, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject, catchError, interval, map, of, switchMap } from 'rxjs';
-import { Carro, ESTADOS, ETIQUETAS_ESTADO, EstadoCarro } from './carro.model';
+import {
+  Carro,
+  ESTADOS,
+  ETIQUETAS_ESTADO,
+  ETIQUETAS_TIPO,
+  EstadoCarro,
+  TIPOS,
+  TipoCarro,
+} from './carro.model';
 import { CarrosService } from './carros.service';
 import { hace } from './tiempo';
 
@@ -17,6 +25,29 @@ export const INTERVALO_ACTUALIZACION_MS = new InjectionToken<number>('INTERVALO_
     <h1>Carros</h1>
 
     @if (error()) { <p role="alert">{{ error() }}</p> }
+
+    <div class="filtros">
+      <label>
+        Tipo
+        <select name="tipo" #selectorTipo [value]="filtroTipo()" (change)="elegirTipo(selectorTipo.value)">
+          <option value="">Todos</option>
+          @for (tipo of tipos; track tipo) {
+            <option [value]="tipo">{{ etiquetasTipo[tipo] }}</option>
+          }
+        </select>
+      </label>
+      <label>
+        Buscar carro
+        <input
+          type="search"
+          name="buscar"
+          #caja
+          autocomplete="off"
+          [value]="busqueda()"
+          (input)="busqueda.set(caja.value)"
+        />
+      </label>
+    </div>
 
     <section class="resumen" aria-label="Resumen por estado">
       @for (estado of estados; track estado) {
@@ -34,9 +65,9 @@ export const INTERVALO_ACTUALIZACION_MS = new InjectionToken<number>('INTERVALO_
     </section>
 
     <p class="detalle">
-      @if (filtro(); as estado) {
-        Mostrando {{ visibles().length }} de {{ carros().length }} carros ({{ etiquetas[estado] }})
-        <button type="button" class="secundario" (click)="quitarFiltro()">Mostrar todos</button>
+      @if (hayFiltros()) {
+        Mostrando {{ visibles().length }} de {{ carros().length }} carros
+        <button type="button" class="secundario" (click)="quitarFiltros()">Quitar filtros</button>
       } @else {
         {{ carros().length }} carros en total
       }
@@ -55,6 +86,7 @@ export const INTERVALO_ACTUALIZACION_MS = new InjectionToken<number>('INTERVALO_
           <li class="carro">
             <div>
               <strong>{{ carro.numero }}</strong>
+              <span class="tipo">{{ etiquetasTipo[carro.tipo] }}</span>
               @if (carro.contenedor_elemento) {
                 <small>Contenedor {{ carro.contenedor_elemento }}</small>
               }
@@ -69,6 +101,8 @@ export const INTERVALO_ACTUALIZACION_MS = new InjectionToken<number>('INTERVALO_
     }
   `,
   styles: `
+    .filtros { display: grid; grid-template-columns: 1fr 2fr; gap: 0.75rem; margin-bottom: 0.5rem; }
+    .filtros label { margin-bottom: 0.5rem; }
     .resumen { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-bottom: 1rem; }
     .tarjeta {
       display: flex; flex-direction: column; align-items: center; gap: 0.25rem;
@@ -86,6 +120,7 @@ export const INTERVALO_ACTUALIZACION_MS = new InjectionToken<number>('INTERVALO_
       background: var(--color-superficie); border: 1px solid var(--color-borde); border-radius: var(--radio);
     }
     .carro small { display: block; color: var(--color-suave); }
+    .tipo { margin-left: 0.5rem; font-size: 0.8125rem; font-weight: 600; color: var(--color-suave); }
     .insignia {
       padding: 0.125rem 0.75rem; font-size: 0.875rem; font-weight: 600; white-space: nowrap;
       color: var(--estado-texto); background: var(--estado-fondo); border-radius: 999px;
@@ -99,9 +134,13 @@ export class CarrosComponent implements OnInit {
 
   readonly estados = ESTADOS;
   readonly etiquetas = ETIQUETAS_ESTADO;
+  readonly tipos = TIPOS;
+  readonly etiquetasTipo = ETIQUETAS_TIPO;
   readonly hace = hace;
   readonly carros = signal<Carro[]>([]);
   readonly filtro = signal<EstadoCarro | null>(null);
+  readonly filtroTipo = signal<TipoCarro | ''>('');
+  readonly busqueda = signal('');
   readonly cargando = signal(true);
   readonly error = signal('');
   /** Momento de la última consulta: de aquí se calcula el "hace cuánto" de cada carro. */
@@ -111,16 +150,28 @@ export class CarrosComponent implements OnInit {
     new Date(this.ahora()).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' }),
   );
 
+  readonly hayFiltros = computed(
+    () => this.filtro() !== null || this.filtroTipo() !== '' || this.busqueda().trim() !== '',
+  );
+
+  /** Los carros del tipo elegido: sobre ellos se cuentan los estados. */
+  private readonly delTipo = computed(() => {
+    const tipo = this.filtroTipo();
+    return tipo ? this.carros().filter((carro) => carro.tipo === tipo) : this.carros();
+  });
+
   readonly conteos = computed(() => {
     const total = Object.fromEntries(ESTADOS.map((estado) => [estado, 0])) as Record<EstadoCarro, number>;
-    for (const carro of this.carros()) total[carro.estado]++;
+    for (const carro of this.delTipo()) total[carro.estado]++;
     return total;
   });
 
   readonly visibles = computed(() => {
     const estado = this.filtro();
-    if (!estado) return this.carros();
-    const lista = this.carros().filter((carro) => carro.estado === estado);
+    const texto = this.busqueda().trim().toUpperCase();
+    let lista = this.delTipo();
+    if (estado) lista = lista.filter((carro) => carro.estado === estado);
+    if (texto) lista = lista.filter((carro) => carro.numero.toUpperCase().includes(texto));
     // En tránsito: primero los que llevan más tiempo, que son los que hay que ir a buscar.
     return estado === 'en_transito'
       ? [...lista].sort((a, b) => Date.parse(a.estado_desde) - Date.parse(b.estado_desde))
@@ -169,7 +220,13 @@ export class CarrosComponent implements OnInit {
     this.filtro.update((actual) => (actual === estado ? null : estado));
   }
 
-  quitarFiltro(): void {
+  elegirTipo(valor: string): void {
+    this.filtroTipo.set(valor as TipoCarro | '');
+  }
+
+  quitarFiltros(): void {
     this.filtro.set(null);
+    this.filtroTipo.set('');
+    this.busqueda.set('');
   }
 }
