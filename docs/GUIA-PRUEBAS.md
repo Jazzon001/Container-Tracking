@@ -79,6 +79,16 @@ La API lee la variable de entorno `DATABASE_URL`:
 
 **Nunca escribas la cadena de Supabase en un archivo del repositorio.** Contiene la contraseña y el checker de la universidad revisa que no haya secretos.
 
+**Cuando cambia el modelo de datos** (se agrega una columna o una tabla), tu base local `backend/container_tracking.db` queda con la estructura vieja y la API falla con un error como `no such column`. Todavía no hay migraciones, así que se recrea la base: detén la API, borra el archivo y vuelve a crear tus usuarios.
+
+```powershell
+cd backend
+Remove-Item container_tracking.db
+python -m scripts.crear_usuario admin admin
+```
+
+Al arrancar la API otra vez, las tablas se crean solas y vacías (sin carros). Antes del despliegue hay que resolver cómo versionar los cambios del esquema (ver ADR 0001).
+
 ## 5.1 Seguridad: clave del token y primer administrador
 
 La API firma los tokens de inicio de sesión con una clave secreta que se lee de la variable de entorno `JWT_SECRET`. **Las pruebas la definen solas**, pero para arrancar el servidor tú debes definirla (cada vez que abras una terminal nueva):
@@ -145,6 +155,39 @@ npm run build
 La primera línea ejecuta las pruebas una sola vez (sin `--no-watch` se quedan esperando cambios; sal con `Ctrl + C`).
 
 > **Ojo con OneDrive:** tu carpeta del proyecto está dentro de OneDrive, y `node_modules` contiene decenas de miles de archivos que OneDrive intentará sincronizar (lento, y a veces con conflictos). Lo más cómodo es mover el repositorio fuera de OneDrive (por ejemplo, a `C:\dev\Container-Tracking`) o pausar la sincronización mientras trabajas.
+
+## 5.3 Encender todo desde VS Code
+
+El proyecto trae tareas de VS Code (`.vscode/tasks.json`) para no escribir comandos a mano. Abre la **carpeta raíz del repositorio** en VS Code (`Container-Tracking`, no `backend` ni `frontend`).
+
+**Preparación (solo la primera vez)**
+
+1. Crea tu archivo de clave local: copia `backend/.env.example` como `backend/.env` y escribe en `JWT_SECRET=` un texto largo y aleatorio (el propio archivo de ejemplo indica cómo generarlo). El `.env` está en `.gitignore`: nunca se sube a GitHub.
+2. Instala las dependencias: `Ctrl + Shift + P` → **Tasks: Run Task** → **Instalar dependencias (todo)**.
+3. Crea tu usuario administrador: **Tasks: Run Task** → **Crear usuario**. Te pide el nombre y el rol, y luego la contraseña en la terminal.
+
+**Cada día**
+
+- **`Ctrl + Shift + B`** (o *Tasks: Run Task* → **Iniciar todo**) enciende la API (`http://127.0.0.1:8000`) y el frontend (`http://localhost:4200`) a la vez, cada uno en su propia terminal.
+- **Todas las pruebas:** *Tasks: Run Task* → **Todas las pruebas** (o las del backend y las del frontend por separado).
+- Para **apagar** un servidor, entra a su terminal y pulsa `Ctrl + C` (o cierra el panel de esa terminal).
+
+**Otras tareas disponibles**
+
+| Tarea | Para qué sirve |
+|---|---|
+| API (backend) | Solo la API, con recarga automática al guardar |
+| Frontend (Angular) | Solo la interfaz |
+| Pruebas del backend | pytest con cobertura |
+| Pruebas del frontend | Pruebas de Angular, una sola vez |
+| Crear usuario | Alta de usuarios de cualquier rol |
+
+**Notas**
+
+- Las tareas usan el entorno virtual de `backend/.venv`, así que **no hace falta activarlo** a mano.
+- Con la extensión **Python** de Microsoft, el panel *Testing* (matraz) de VS Code también descubre las pruebas del backend.
+- Si cambiaste de computadora o borraste `backend/.venv`, vuelve a crearlo como en la sección 2.
+- Las rutas de las tareas son de **Windows** (`.venv\Scripts\python.exe`).
 
 ## 6. Flujo de trabajo diario con Git
 
