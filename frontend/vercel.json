@@ -4,7 +4,7 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist/container-tracking/browser",
   "rewrites": [
-    { "source": "/login", "destination": "/index.html" },
+    { "source": "/login", "destination": "/login.html" },
     { "source": "/carros", "destination": "/index.html" },
     { "source": "/carga", "destination": "/index.html" },
     { "source": "/entrega", "destination": "/index.html" },
@@ -25,6 +25,10 @@
           "value": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://container-tracking-api.onrender.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
         }
       ]
+    },
+    {
+      "source": "/sw.js",
+      "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
     },
     {
       "source": "/ngsw-worker.js",
