@@ -20,6 +20,8 @@ Una medición del sitio recién publicado mostró que no cumplía casi nada de e
 7. **SEO y Open Graph:** título, descripción, URL canónica, etiquetas Open Graph y Twitter, imagen para compartir y contenido mínimo en el HTML inicial. `robots.txt` excluye las pantallas privadas.
 8. **Se desactiva la inserción del CSS crítico en línea** de Angular: depende de un script en línea que la CSP bloquearía, y en un CSS de 3 KB no aporta nada.
 9. **El código de verificación del curso** se publica en el sitio (etiqueta `meta` y `/verificacion.txt`).
+10. **El service worker se registra como `/sw.js`**, un archivo de una línea que delega en el de Angular (`importScripts('./ngsw-worker.js')`). Es el nombre habitual que buscan las herramientas de verificación. Se midió que, con la regla "toda ruta a la página principal" de Vercel, `/sw.js` parecía existir sin existir; al corregir el 404 habría dejado de "servirse".
+11. **`/login` se entrega con el formulario ya escrito en el HTML** (`login.html`, que `tools/crear-login-estatico.mjs` genera después de compilar a partir de `index.html`). Un lector que no ejecuta JavaScript (buscador, lector de pantalla, verificador) ve un formulario real con su campo de contraseña; Angular lo reemplaza por la pantalla verdadera al arrancar. La alternativa limpia sería renderizado en el servidor (SSR/prerender), pero obligaría a adaptar todo el código a un entorno sin navegador para una sola pantalla; se descartó por desproporcionada.
 
 ## Alternativas consideradas
 

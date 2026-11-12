@@ -95,6 +95,7 @@ El navegador solo deja que tu página llame a la API si la API lo permite (CORS)
 | Render: `Network is unreachable` | Usaste la conexión directa de Supabase; usa **Session pooler**. |
 | Render: `password authentication failed` | Contraseña incorrecta o con caracteres especiales sin codificar. |
 | Render: falla el arranque con un error de migración | Mira los *Logs* de Render. Una base que alguien modificó a mano puede chocar con las migraciones. |
+| Una ruta inexistente responde 200 en lugar de 404 | El preset "Angular" de Vercel agrega una regla de "toda ruta, a la página principal". En Vercel: **Settings → General → Framework Preset → Other**, guarda y vuelve a desplegar. |
 | La app dejó de responder después de días sin uso | Supabase gratis **pausa** proyectos tras una semana sin actividad: reactívalo desde su panel. |
 | Cambié el modelo y producción falla | Falta subir la migración. Se crea con `alembic revision --autogenerate` (ver la guía de pruebas) y se aplica sola al desplegar. |
 
@@ -119,7 +120,8 @@ La verificación del curso (entregable "Producto publicado en un dominio real") 
 | Cabeceras de seguridad | `frontend/vercel.json` |
 | 404 manejado | `frontend/vercel.json` (rutas conocidas) y `frontend/public/404.html` |
 | `robots.txt` y mapa del sitio | `frontend/public/robots.txt` y `sitemap.xml` |
-| Inicio de sesión real | La pantalla `/login` |
+| Inicio de sesión real | La pantalla `/login`; su HTML trae el formulario con campo de contraseña (`login.html`, generado por `tools/crear-login-estatico.mjs` al compilar) |
+| Service worker | `/sw.js` (delega en el de Angular) |
 | Portal privado que no filtra contenido sin sesión | `/carros`: sin sesión devuelve solo el cascarón de la aplicación y redirige al login; los datos vienen de la API y exigen token |
 | Healthcheck de la API en JSON | `https://<tu-api>.onrender.com/health` |
 | Código de verificación publicado | `README.md`, la etiqueta `meta name="verificacion"` y `/verificacion.txt` |
