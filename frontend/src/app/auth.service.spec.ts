@@ -101,6 +101,35 @@ describe('AuthService', () => {
     vi.unstubAllGlobals();
   });
 
+  describe('cookie de sesión', () => {
+    const hayCookie = () => document.cookie.split('; ').some((c) => c === 'ct_sesion=1');
+    afterEach(() => TestBed.inject(AuthService).logout());
+
+    it('no hay cookie sin sesión', () => {
+      crearServicio();
+      expect(hayCookie()).toBe(false);
+    });
+
+    it('se crea al iniciar sesión', () => {
+      const auth = crearServicio();
+      iniciarSesion(auth);
+      expect(hayCookie()).toBe(true);
+    });
+
+    it('se borra al cerrar sesión', () => {
+      const auth = crearServicio();
+      iniciarSesion(auth);
+      auth.logout();
+      expect(hayCookie()).toBe(false);
+    });
+
+    it('se crea al recuperar una sesión guardada de antes', () => {
+      localStorage.setItem('container_tracking_token', 'guardado');
+      crearServicio();
+      expect(hayCookie()).toBe(true);
+    });
+  });
+
   describe('puede', () => {
     it('permite al rol indicado', () => {
       const auth = crearServicio();

@@ -3,6 +3,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import { API_URL } from './api.config';
 import { olvidarDatosEnCache } from './cache-offline';
+import { marcarSesionCerrada, marcarSesionIniciada } from './sesion-cookie';
 
 export type Rol = 'poy' | 'almacen' | 'dty' | 'twisting' | 'admin';
 
@@ -45,6 +46,11 @@ export class AuthService {
   readonly rol = this._rol.asReadonly();
   readonly autenticado = computed(() => this._token() !== null);
 
+  constructor() {
+    // Una sesión guardada de antes (o de otra pestaña) también debe tener su cookie marcadora.
+    if (this._token() !== null) marcarSesionIniciada();
+  }
+
   login(username: string, password: string): Observable<TokenResponse> {
     return this.http
       .post<TokenResponse>(`${this.apiUrl}/auth/login`, { username, password })
@@ -69,6 +75,8 @@ export class AuthService {
   private guardar(token: string | null, rol: Rol | null): void {
     escribir(CLAVE_TOKEN, token);
     escribir(CLAVE_ROL, rol);
+    if (token === null) marcarSesionCerrada();
+    else marcarSesionIniciada();
     this._token.set(token);
     this._rol.set(rol);
   }
