@@ -34,6 +34,14 @@
           "clave_primaria": false,
           "unico": true,
           "clave_foranea": []
+        },
+        {
+          "nombre": "estado_desde",
+          "tipo": "DATETIME",
+          "nulo": false,
+          "clave_primaria": false,
+          "unico": false,
+          "clave_foranea": []
         }
       ]
     },
