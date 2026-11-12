@@ -118,11 +118,11 @@ La verificación del curso (entregable "Producto publicado en un dominio real") 
 | Responsive con `@media` | `frontend/src/styles.css` |
 | SEO y Open Graph | `frontend/src/index.html` y la imagen `icons/og-image.png` |
 | Cabeceras de seguridad | `frontend/vercel.json` |
-| 404 manejado | `frontend/vercel.json` (rutas conocidas) y `frontend/public/404.html` |
+| 404 manejado | `frontend/vercel.json` (última regla de `rewrites`) y `frontend/public/404.html`: página propia, con estado 200 |
 | `robots.txt` y mapa del sitio | `frontend/public/robots.txt` y `sitemap.xml` |
 | Inicio de sesión real | La pantalla `/login`; su HTML trae el formulario con campo de contraseña (`login.html`, generado por `tools/crear-login-estatico.mjs` al compilar) |
 | Service worker | `/sw.js` (delega en el de Angular) |
-| Portal privado que no filtra contenido sin sesión | `/carros`: sin sesión devuelve solo el cascarón de la aplicación y redirige al login; los datos vienen de la API y exigen token |
+| Portal privado que no filtra contenido sin sesión | `/carros`: sin la cookie de sesión, el servidor redirige (307) a `/login`; los datos vienen de la API y exigen token (ver el ADR 0006) |
 | Healthcheck de la API en JSON | `https://<tu-api>.onrender.com/health` |
 | Código de verificación publicado | `README.md`, la etiqueta `meta name="verificacion"` y `/verificacion.txt` |
 
