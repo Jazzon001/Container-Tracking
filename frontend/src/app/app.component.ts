@@ -14,6 +14,7 @@ import { AuthService } from './auth.service';
           @if (auth.puede('poy')) { <a routerLink="/carga" routerLinkActive="activa">Cargar</a> }
           @if (auth.puede('almacen')) { <a routerLink="/entrega" routerLinkActive="activa">Recibir</a> }
           @if (auth.puede('poy', 'dty')) { <a routerLink="/mantenimiento" routerLinkActive="activa">Mantenimiento</a> }
+          <a routerLink="/historial" routerLinkActive="activa">Historial</a>
         </nav>
         <button type="button" class="secundario" (click)="salir()">Salir</button>
       </header>

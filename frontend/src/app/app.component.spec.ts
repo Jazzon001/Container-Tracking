@@ -55,29 +55,29 @@ describe('App', () => {
   });
 
   describe('navegación según el rol', () => {
-    it('POY ve Carros, Cargar y Mantenimiento', async () => {
+    it('POY ve Carros, Cargar, Mantenimiento e Historial', async () => {
       await crear(true, 'poy');
-      expect(enlaces()).toEqual(['Carros', 'Cargar', 'Mantenimiento']);
+      expect(enlaces()).toEqual(['Carros', 'Cargar', 'Mantenimiento', 'Historial']);
     });
 
-    it('Almacén ve Carros y Recibir', async () => {
+    it('Almacén ve Carros, Recibir e Historial', async () => {
       await crear(true, 'almacen');
-      expect(enlaces()).toEqual(['Carros', 'Recibir']);
+      expect(enlaces()).toEqual(['Carros', 'Recibir', 'Historial']);
     });
 
-    it('DTY ve Carros y Mantenimiento', async () => {
+    it('DTY ve Carros, Mantenimiento e Historial', async () => {
       await crear(true, 'dty');
-      expect(enlaces()).toEqual(['Carros', 'Mantenimiento']);
+      expect(enlaces()).toEqual(['Carros', 'Mantenimiento', 'Historial']);
     });
 
-    it('Twisting solo ve Carros', async () => {
+    it('Twisting solo consulta: Carros e Historial', async () => {
       await crear(true, 'twisting');
-      expect(enlaces()).toEqual(['Carros']);
+      expect(enlaces()).toEqual(['Carros', 'Historial']);
     });
 
     it('el administrador ve todo', async () => {
       await crear(true, 'admin');
-      expect(enlaces()).toEqual(['Carros', 'Cargar', 'Recibir', 'Mantenimiento']);
+      expect(enlaces()).toEqual(['Carros', 'Cargar', 'Recibir', 'Mantenimiento', 'Historial']);
     });
   });
 });

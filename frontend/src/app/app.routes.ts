@@ -3,6 +3,7 @@ import { authGuard, rolGuard } from './auth.guard';
 import { CargaComponent } from './carga.component';
 import { CarrosComponent } from './carros.component';
 import { EntregaComponent } from './entrega.component';
+import { HistorialComponent } from './historial.component';
 import { LoginComponent } from './login.component';
 import { MantenimientoComponent } from './mantenimiento.component';
 
@@ -16,5 +17,6 @@ export const routes: Routes = [
     component: MantenimientoComponent,
     canActivate: [authGuard, rolGuard('poy', 'dty')],
   },
+  { path: 'historial', component: HistorialComponent, canActivate: [authGuard] },
   { path: '', redirectTo: 'carros', pathMatch: 'full' },
 ];
