@@ -91,7 +91,7 @@ Backend (FastAPI + SQLAlchemy) y frontend (Angular) en desarrollo.
 | Roles y autenticación | Inicio de sesión con JWT y permisos por rol implementados |
 | Migraciones de la base de datos | Implementadas (Alembic); se aplican solas al arrancar |
 | Despliegue (Supabase, Render, Vercel) | Preparado y documentado; pendiente de publicar |
-| Frontend (Angular) | Inicio de sesión, lista de carros con resumen por estado, desde hace cuánto está cada carro así y actualización automática, carga de carros (POY), recepción (Almacén) y mantenimiento (POY y DTY) con campo de escaneo |
+| Frontend (Angular) | Inicio de sesión, lista de carros con resumen por estado, desde hace cuánto está cada carro así y actualización automática, carga de carros (POY, por número de carro y contenedor elemento), recepción (Almacén, solo por contenedor elemento) y mantenimiento (POY y DTY, por número de carro) con campo de escaneo |
 
 ### Endpoints disponibles
 
@@ -100,7 +100,7 @@ Backend (FastAPI + SQLAlchemy) y frontend (Angular) en desarrollo.
 | `POST /auth/login` | Inicia sesión y devuelve un token y el rol del usuario |
 | `POST /usuarios` | Crea un usuario (solo administrador) |
 | `POST /carros` | Registra un carro (número y tipo: `poy`, `dty` o `twisting`) |
-| `GET /carros` | Lista carros; filtros opcionales `?estado=`, `?numero=` y `?tipo=` |
+| `GET /carros` | Lista carros; filtros opcionales `?estado=`, `?numero=`, `?tipo=` y `?contenedor_elemento=` |
 | `GET /carros/{id}` | Consulta un carro |
 | `POST /carros/{id}/carga` | POY carga un carro con su contenedor elemento |
 | `POST /carros/{id}/entrega` | Almacén recibe el carro vacío |
