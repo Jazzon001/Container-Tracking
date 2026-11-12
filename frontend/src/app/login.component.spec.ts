@@ -8,7 +8,7 @@ import { AuthService } from './auth.service';
 describe('LoginComponent', () => {
   let fixture: ComponentFixture<LoginComponent>;
   let el: HTMLElement;
-  let auth: { login: ReturnType<typeof vi.fn> };
+  let auth: { login: ReturnType<typeof vi.fn>; autenticado: ReturnType<typeof vi.fn> };
   let navegar: ReturnType<typeof vi.fn>;
 
   function escribir(selector: string, valor: string) {
@@ -23,7 +23,7 @@ describe('LoginComponent', () => {
   }
 
   beforeEach(async () => {
-    auth = { login: vi.fn() };
+    auth = { login: vi.fn(), autenticado: vi.fn().mockReturnValue(false) };
     navegar = vi.fn();
     await TestBed.configureTestingModule({
       imports: [LoginComponent],
@@ -35,6 +35,26 @@ describe('LoginComponent', () => {
     fixture = TestBed.createComponent(LoginComponent);
     fixture.detectChanges();
     el = fixture.nativeElement;
+  });
+
+  it('no redirige a quien aún no ha iniciado sesión', () => {
+    expect(navegar).not.toHaveBeenCalled();
+  });
+
+  it('manda directo a Carros a quien ya tiene sesión', async () => {
+    TestBed.resetTestingModule();
+    auth = { login: vi.fn(), autenticado: vi.fn().mockReturnValue(true) };
+    navegar = vi.fn();
+    await TestBed.configureTestingModule({
+      imports: [LoginComponent],
+      providers: [
+        { provide: AuthService, useValue: auth },
+        { provide: Router, useValue: { navigateByUrl: navegar } },
+      ],
+    }).compileComponents();
+    TestBed.createComponent(LoginComponent).detectChanges();
+
+    expect(navegar).toHaveBeenCalledWith('/carros');
   });
 
   it('muestra campos de usuario y contraseña', () => {

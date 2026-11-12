@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from './auth.service';
@@ -34,13 +34,19 @@ function mensajeDeError(status: number): string {
     .ayuda { margin: 0 0 1.5rem; color: var(--color-suave); }
   `,
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   readonly username = signal('');
   readonly password = signal('');
   readonly error = signal('');
   readonly iniciada = signal(false);
+
+  ngOnInit(): void {
+    // Quien ya tiene sesión no necesita ver el formulario (por ejemplo, si el servidor lo
+    // mandó aquí porque le faltaba la cookie de sesión).
+    if (this.auth.autenticado()) this.router.navigateByUrl('/carros');
+  }
 
   entrar(evento: Event): void {
     evento.preventDefault();
