@@ -1,0 +1,24 @@
+# Plano (Blueprint) de Render para la API. Ver docs/DESPLIEGUE.md.
+# Las variables marcadas `sync: false` se piden al crear el servicio: nunca se escriben aquí.
+services:
+  - type: web
+    name: container-tracking-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    # Las migraciones de la base se aplican solas cuando la API arranca (app/main.py).
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.8
+      # Render genera una clave aleatoria distinta a la de tu computadora.
+      - key: JWT_SECRET
+        generateValue: true
+      # Cadena de conexión de Supabase ("Session pooler").
+      - key: DATABASE_URL
+        sync: false
+      # Dirección del frontend en Vercel (https://...vercel.app), sin "/" al final.
+      - key: CORS_ORIGINS
+        sync: false
