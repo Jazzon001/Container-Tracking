@@ -8,6 +8,7 @@ import { EntregaComponent } from './entrega.component';
 const DISPONIBLE: Carro = {
   id: 1,
   numero: 'C-001',
+  tipo: 'poy',
   estado: 'disponible',
   contenedor_elemento: null,
   estado_desde: '2026-11-12T12:00:00Z',

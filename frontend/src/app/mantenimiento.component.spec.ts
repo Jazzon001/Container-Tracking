@@ -11,6 +11,7 @@ const hace = (horas: number) => new Date(Date.now() - horas * 3_600_000).toISOSt
 const carro = (id: number, estado: Carro['estado'], horas: number): Carro => ({
   id,
   numero: `C-00${id}`,
+  tipo: 'poy',
   estado,
   contenedor_elemento: null,
   estado_desde: hace(horas),
