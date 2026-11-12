@@ -53,6 +53,15 @@ class SinPermiso(ErrorDeNegocio):
         super().__init__("No tienes permiso para esta operación")
 
 
+class ArchivoInvalido(ErrorDeNegocio):
+    """El archivo Excel no se pudo leer o no tiene el formato esperado."""
+
+    codigo_http = 422
+
+    def __init__(self, detalle: str) -> None:
+        super().__init__(detalle)
+
+
 class UsuarioExistente(ErrorDeNegocio):
     codigo_http = 409
 
