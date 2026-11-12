@@ -5,6 +5,7 @@ from sqlalchemy import DateTime, Enum, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
+from app.tiempo import ahora
 
 
 class EstadoCarro(str, enum.Enum):
@@ -36,6 +37,9 @@ class Carro(Base):
     contenedor_elemento: Mapped[str | None] = mapped_column(
         String(50), unique=True, default=None
     )
+    # Cuándo pasó el carro a su estado actual. Con esto se sabe desde hace cuánto
+    # un carro está en tránsito, que es lo que busca el cliente.
+    estado_desde: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=ahora)
 
 
 class Mantenimiento(Base):

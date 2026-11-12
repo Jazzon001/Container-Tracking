@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.errores import CarroNoEncontrado, ContenedorEnUso, EstadoInvalido
 from app.models import Carro, EstadoCarro
+from app.tiempo import ahora
 
 
 def obtener_carro(db: Session, carro_id: int) -> Carro:
@@ -35,10 +36,14 @@ def transicionar_estado(
     """Cambia el carro de un estado a otro de forma atómica (sin hacer commit).
 
     La condición `estado == desde` va dentro del UPDATE para que, si dos usuarios
-    actúan sobre el mismo carro a la vez, solo uno lo consiga.
+    actúan sobre el mismo carro a la vez, solo uno lo consiga. Cada cambio de estado
+    registra también cuándo ocurrió (`estado_desde`), en un solo lugar para todas
+    las operaciones.
     """
     resultado = db.execute(
-        update(Carro).where(Carro.id == carro_id, Carro.estado == desde).values(**valores)
+        update(Carro)
+        .where(Carro.id == carro_id, Carro.estado == desde)
+        .values(**valores, estado_desde=ahora())
     )
     if resultado.rowcount == 0:
         db.rollback()

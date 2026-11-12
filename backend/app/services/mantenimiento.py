@@ -1,11 +1,10 @@
 """Reglas de negocio del mantenimiento de carros, independientes de HTTP."""
-from datetime import datetime, timezone
-
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models import EstadoCarro, Mantenimiento
 from app.services.carros import obtener_carro, transicionar_estado
+from app.tiempo import ahora
 
 
 def iniciar_mantenimiento(db: Session, carro_id: int) -> Mantenimiento:
@@ -17,7 +16,7 @@ def iniciar_mantenimiento(db: Session, carro_id: int) -> Mantenimiento:
         {"estado": EstadoCarro.EN_MANTENIMIENTO},
         "Solo un carro disponible puede entrar a mantenimiento",
     )
-    registro = Mantenimiento(carro_id=carro_id, fecha_entrada=datetime.now(timezone.utc))
+    registro = Mantenimiento(carro_id=carro_id, fecha_entrada=ahora())
     db.add(registro)
     db.commit()
     return registro
@@ -37,7 +36,7 @@ def finalizar_mantenimiento(db: Session, carro_id: int) -> Mantenimiento:
             Mantenimiento.carro_id == carro_id, Mantenimiento.fecha_salida.is_(None)
         )
     ).one()
-    registro.fecha_salida = datetime.now(timezone.utc)
+    registro.fecha_salida = ahora()
     db.commit()
     return registro
 

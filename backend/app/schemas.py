@@ -1,9 +1,18 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, StringConstraints
+from pydantic import AfterValidator, BaseModel, ConfigDict, StringConstraints
 
 from app.models import EstadoCarro, Rol
+
+
+def _como_utc(fecha: datetime) -> datetime:
+    """Todas las fechas se guardan en UTC, pero SQLite las devuelve sin zona horaria.
+    Se les agrega, para que el frontend no las confunda con la hora local."""
+    return fecha.replace(tzinfo=timezone.utc) if fecha.tzinfo is None else fecha
+
+
+FechaUTC = Annotated[datetime, AfterValidator(_como_utc)]
 
 # Un solo lugar define cómo se validan los códigos escritos o escaneados:
 # se recortan espacios y no pueden quedar vacíos.
@@ -28,6 +37,7 @@ class CarroOut(BaseModel):
     numero: str
     estado: EstadoCarro
     contenedor_elemento: str | None
+    estado_desde: FechaUTC
 
 
 class MantenimientoOut(BaseModel):
@@ -35,8 +45,8 @@ class MantenimientoOut(BaseModel):
 
     id: int
     carro_id: int
-    fecha_entrada: datetime
-    fecha_salida: datetime | None
+    fecha_entrada: FechaUTC
+    fecha_salida: FechaUTC | None
 
 
 class LoginIn(BaseModel):
