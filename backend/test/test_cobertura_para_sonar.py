@@ -22,15 +22,15 @@ XML = """<?xml version="1.0" ?>
 """
 
 
-def test_antepone_la_carpeta_del_backend_a_cada_archivo():
-    assert 'filename="backend/app/database.py"' in reescribir_rutas(XML)
+def test_deja_cada_archivo_relativo_a_la_carpeta_del_backend():
+    assert 'filename="app/database.py"' in reescribir_rutas(XML)
 
 
 def test_usa_barras_normales_tambien_en_los_subpaquetes():
-    assert 'filename="backend/app/routers/auth.py"' in reescribir_rutas(XML)
+    assert 'filename="app/routers/auth.py"' in reescribir_rutas(XML)
 
 
-def test_declara_la_raiz_del_repositorio_como_carpeta_base():
+def test_declara_la_carpeta_del_modulo_como_carpeta_base():
     resultado = reescribir_rutas(XML)
     assert "<source>.</source>" in resultado
     assert "C:\\proyecto" not in resultado
@@ -45,7 +45,7 @@ def test_lee_coverage_xml_y_escribe_sonar_coverage_xml_en_la_carpeta_actual(tmp_
     (tmp_path / "coverage.xml").write_text(XML, encoding="utf-8")
 
     assert main() == 0
-    assert 'filename="backend/app/database.py"' in (tmp_path / "sonar-coverage.xml").read_text(encoding="utf-8")
+    assert 'filename="app/database.py"' in (tmp_path / "sonar-coverage.xml").read_text(encoding="utf-8")
 
 
 def test_avisa_si_falta_el_reporte_de_entrada(tmp_path, monkeypatch, capsys):

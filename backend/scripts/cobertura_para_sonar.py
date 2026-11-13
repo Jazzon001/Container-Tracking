@@ -1,8 +1,8 @@
 """Reescribe el coverage.xml del backend para que SonarCloud reconozca los archivos.
 
-coverage.py escribe cada archivo relativo a la carpeta medida (`app/database.py`), pero
-SonarCloud analiza el repositorio completo desde la raíz y espera `backend/app/database.py`.
-Sin este ajuste no relaciona la cobertura con el código y la da por inexistente.
+coverage.py declara como carpeta base una ruta absoluta de la máquina que corrió las pruebas
+(`/home/runner/...`), que SonarCloud no puede usar. Este script la cambia por `.` (la carpeta
+del módulo `backend`) y deja las rutas de los archivos relativas a ella (`app/database.py`).
 
 Uso (desde la carpeta backend, después de correr pytest con --cov-report=xml):
     python -m scripts.cobertura_para_sonar
@@ -14,7 +14,9 @@ import re
 import sys
 from pathlib import Path
 
-PREFIJO = "backend/"  # coverage.py mide desde la carpeta backend (ver .coveragerc)
+# SonarCloud detecta `backend` como un módulo propio (por backend/.coveragerc) y resuelve las
+# rutas del reporte desde esa carpeta: `app/database.py`, sin anteponer `backend/`.
+PREFIJO = ""
 ENTRADA = Path("coverage.xml")
 SALIDA = Path("sonar-coverage.xml")
 
