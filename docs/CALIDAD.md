@@ -21,6 +21,24 @@ Corre las pruebas de los dos lados con cobertura y escribe los reportes unificad
 
 `coverage-summary.json` usa el formato de Istanbul (`total.lines.pct`). En ese formato las *statements* se miden con las mismas líneas, porque lcov no distingue entre ambas.
 
+**Qué se mide:** todo el código del backend (la aplicación, los scripts y las migraciones, según `backend/.coveragerc`) y del frontend. Las pruebas no se miden a sí mismas. Medir los scripts baja el porcentaje respecto a medir solo `app`, pero es la cifra honesta del proyecto.
+
+Los scripts de cobertura no aceptan rutas por la línea de comandos (SonarCloud lo marca como riesgo de recorrido de rutas): siempre leen y escriben en lugares fijos.
+
+## Dependencias del CI con versiones y hashes fijos
+
+El CI instala el backend con `pip install --require-hashes --only-binary :all: -r requirements-dev.lock`: versiones exactas, verificadas por hash y solo con paquetes ya compilados. Así, una librería alterada o una versión nueva no entra al CI sin que lo notes. El frontend usa `npm ci --ignore-scripts` (versiones fijadas por `package-lock.json` y ningún paquete ejecuta código al instalarse).
+
+**Cuando cambies `requirements.txt` o `requirements-dev.txt`, regenera el archivo fijado** (desde `backend`, con el entorno activo):
+
+```powershell
+pip install uv
+```
+```powershell
+python -m uv pip compile requirements-dev.txt --generate-hashes --python-version 3.12 --python-platform linux --only-binary :all: --no-header -o requirements-dev.lock
+```
+Y sube `requirements-dev.lock` junto con el cambio. Render sigue instalando con `requirements.txt`.
+
 ## SonarCloud: pasos que solo puedes hacer tú
 
 El código ya está preparado (`sonar-project.properties` y el trabajo `sonar` del CI). Falta crear el proyecto en tu cuenta y dar el token, que es un secreto.
@@ -30,7 +48,7 @@ El código ya está preparado (`sonar-project.properties` y el trabajo `sonar` d
 3. **Analiza un proyecto nuevo** y elige el repositorio `Container-Tracking`.
 4. Cuando pregunte cómo analizar, elige **"With GitHub Actions"** (análisis desde el CI). **No uses el análisis automático**: no admite cobertura, y el *quality gate* fallaría. Si quedó activado, desactívalo en *Administration → Analysis Method*.
 5. SonarCloud te muestra un **token**. Cópialo y guárdalo **solo** como secreto de GitHub: en tu repositorio, *Settings → Secrets and variables → Actions → New repository secret*, con el nombre exacto `SONAR_TOKEN`. **Nunca lo pegues en el repositorio ni en una conversación.**
-6. Anota la **clave de la organización** (*Organization key*) y la **clave del proyecto** (*Project key*). No son secretas. Escríbelas en las dos líneas marcadas de `sonar-project.properties`.
+6. La **clave de la organización** (`jazzon001`) y la **clave del proyecto** (`Jazzon001_Container-Tracking`) ya están escritas en `sonar-project.properties`. No son secretas.
 7. Confirma que el proyecto es **público**: *Administration → Visibility → Public*.
 8. Sube los cambios. El CI corre el trabajo `sonar` y el panel se llena en unos minutos.
 
