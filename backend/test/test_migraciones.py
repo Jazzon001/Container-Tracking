@@ -1,3 +1,5 @@
+import io
+
 import pytest
 from alembic import command
 from alembic.autogenerate import compare_metadata
@@ -62,6 +64,37 @@ def test_las_migraciones_forman_una_sola_linea():
     """Dos migraciones con el mismo origen crean ramas; Alembic no sabría cuál aplicar."""
     guion = ScriptDirectory.from_config(configuracion_alembic())
     assert len(guion.get_heads()) == 1
+
+
+def sql_de_postgresql(origen: str, destino: str) -> str:
+    """El SQL que una migración ejecutaría en PostgreSQL, sin conectarse a ninguna base."""
+    salida = io.StringIO()
+    cfg = configuracion_alembic("postgresql+psycopg://usuario:clave@servidor/base")
+    cfg.output_buffer = salida
+    command.upgrade(cfg, f"{origen}:{destino}", sql=True)
+    return salida.getvalue()
+
+
+def test_la_migracion_de_seguridad_activa_rls_y_niega_el_acceso_en_cada_tabla_de_postgresql():
+    sql = sql_de_postgresql("0002", "0003")
+
+    for tabla in ("carros", "cargas", "mantenimientos", "usuarios", "alembic_version"):
+        assert f"ALTER TABLE {tabla} ENABLE ROW LEVEL SECURITY" in sql
+        assert f"CREATE POLICY {tabla}_sin_acceso_directo ON {tabla} FOR ALL USING (false)" in sql
+    assert "WITH CHECK (false)" in sql
+
+
+def test_la_migracion_de_seguridad_no_hace_nada_en_sqlite(url, motor):
+    aplicar_migraciones(url)
+    # Sigue funcionando una consulta normal: no hay políticas que la bloqueen.
+    with motor.connect() as conexion:
+        assert conexion.exec_driver_sql("SELECT count(*) FROM carros").scalar_one() == 0
+
+
+def test_la_migracion_de_seguridad_se_puede_revertir_en_sqlite(url, motor):
+    aplicar_migraciones(url)
+    command.downgrade(configuracion_alembic(url), "0002")
+    assert tablas(motor) == TABLAS_DEL_SISTEMA
 
 
 def test_la_migracion_del_historial_conserva_los_carros_que_ya_iban_en_transito(url, motor):
