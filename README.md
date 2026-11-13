@@ -133,6 +133,7 @@ Todas las rutas, salvo `/health` y `/auth/login`, exigen iniciar sesión. El adm
 
 - [Guía de pruebas y flujo de trabajo](docs/GUIA-PRUEBAS.md): cómo instalar, ejecutar y probar.
 - [Guía de despliegue](docs/DESPLIEGUE.md): cómo publicar el sistema en Supabase, Render y Vercel.
+- [Calidad de código](docs/CALIDAD.md): cobertura de pruebas (≥ 80 % exigido en el CI) y análisis con SonarCloud.
 - [Arquitectura (C4)](docs/arquitectura.md) y [decisiones (ADR)](docs/adr/).
 - [Modelo de datos en JSON](docs/modelo-de-datos.json), generado con `python -m scripts.exportar_modelo` desde `backend/`.
 
