@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Container Tracking: trazabilidad de los carros de bobinas de UTEXA entre POY, DTY y Twisting. Presentación del producto.">
+<meta name="verificacion" content="LEARN-CAP-5BC13866">
+<title>Container Tracking: presentación del producto</title>
+<style>
+  :root {
+    --fondo: #f4f5f7; --tarjeta: #ffffff; --texto: #1c2430; --suave: #57606f;
+    --acento: #1d4ed8; --borde: #d8dde6; --ok: #15803d; --aviso: #b45309;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --fondo: #0f141b; --tarjeta: #18202b; --texto: #e6eaf0; --suave: #9aa6b6;
+      --acento: #6ea0ff; --borde: #2b3646; --ok: #4ade80; --aviso: #fbbf24;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--fondo); color: var(--texto); font: 16px/1.6 system-ui, "Segoe UI", sans-serif; }
+  a { color: var(--acento); }
+  header { padding: 48px 16px 32px; text-align: center; background: var(--acento); color: #fff; }
+  header h1 { margin: 0 0 8px; font-size: clamp(1.8rem, 5vw, 2.6rem); }
+  header p { margin: 0 auto 20px; max-width: 46rem; opacity: .95; }
+  .botones { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+  .boton { display: inline-block; padding: 10px 20px; border-radius: 8px; background: #fff; color: #1d4ed8; font-weight: 600; text-decoration: none; }
+  .boton.secundario { background: transparent; color: #fff; border: 2px solid #fff; }
+  nav { display: flex; flex-wrap: wrap; gap: 8px 16px; justify-content: center; padding: 12px 16px; background: var(--tarjeta); border-bottom: 1px solid var(--borde); font-size: .95rem; }
+  main { max-width: 56rem; margin: 0 auto; padding: 8px 16px 48px; }
+  section { margin: 28px 0; padding: 24px 20px; background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 12px; }
+  h2 { margin: 0 0 12px; font-size: 1.5rem; }
+  h3 { margin: 20px 0 6px; font-size: 1.1rem; }
+  ul, ol { padding-left: 1.3rem; }
+  li { margin: 4px 0; }
+  figure { margin: 20px 0 4px; }
+  figure svg { width: 100%; height: auto; border: 1px solid var(--borde); border-radius: 8px; background: var(--fondo); }
+  figcaption { margin-top: 6px; font-size: .9rem; color: var(--suave); }
+  .nota { padding: 10px 14px; border-left: 4px solid var(--aviso); background: var(--fondo); border-radius: 4px; }
+  table { width: 100%; border-collapse: collapse; font-size: .95rem; }
+  th, td { padding: 8px; border-bottom: 1px solid var(--borde); text-align: left; vertical-align: top; }
+  footer { padding: 24px 16px 40px; text-align: center; color: var(--suave); font-size: .9rem; }
+  code { background: var(--fondo); padding: 1px 6px; border-radius: 4px; font-size: .92em; }
+  .svg-texto { fill: var(--texto); font: 14px system-ui, sans-serif; }
+  .svg-suave { fill: var(--suave); font: 12px system-ui, sans-serif; }
+  .svg-caja { fill: var(--tarjeta); stroke: var(--acento); stroke-width: 2; }
+  .svg-flecha { stroke: var(--suave); stroke-width: 2; fill: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Container Tracking</h1>
+  <p>Saber dónde está cada carro de bobinas, desde cuándo y cuántos hay disponibles, para que POY nunca se quede sin carros.</p>
+  <div class="botones">
+    <a class="boton" href="https://container-tracking-lilac.vercel.app/">Abrir el producto en vivo</a>
+    <a class="boton secundario" href="https://github.com/Jazzon001/Container-Tracking">Ver el código en GitHub</a>
+  </div>
+</header>
+
+<nav aria-label="Secciones">
+  <a href="#problema">Problema</a>
+  <a href="#solucion">Solución</a>
+  <a href="#funcionalidades">Funcionalidades</a>
+  <a href="#arquitectura">Arquitectura</a>
+  <a href="#tecnologias">Tecnologías</a>
+  <a href="#manual">Manual de uso</a>
+  <a href="#cliente">Cliente</a>
+  <a href="#autor">Autor</a>
+</nav>
+
+<main>
+
+<section id="problema">
+  <h2>Problema</h2>
+  <p>UTEXA fabrica hilo de poliéster en tres procesos: POY produce el hilo semiterminado, DTY lo consume para producir hilo terminado y Twisting lo retuerce. El producto viaja en <strong>carros</strong>, contenedores de 24 bobinas de hasta 15 kg cada una. Cada carro cargado se registra en el ERP NOW, que le asigna un código único llamado <strong>contenedor elemento</strong>.</p>
+  <p>El problema empieza cuando el producto se consume en DTY: NOW deja de mostrar el carro y asume que ya está libre. En la práctica, DTY retiene muchos carros vacíos durante mucho tiempo. Cuando POY se queda sin carros debe buscarlos de urgencia por la planta y, si no los encuentra, las bobinas terminan en tarimas y se rompe el flujo normal de producción.</p>
+  <p>Además, NOW no permite saber dónde está un carro vacío, desde cuándo está ahí ni si se encuentra en mantenimiento. Sin esa información, nadie puede decidir con datos qué carros recuperar primero.</p>
+</section>
+
+<section id="solucion">
+  <h2>Solución</h2>
+  <p>Container Tracking es un sistema web <strong>paralelo a NOW</strong>: no lo modifica ni depende de una conexión con él. Cada carro tiene siempre un estado conocido, y cada cambio de estado queda registrado con su fecha y hora.</p>
+  <p>Un carro pasa por tres estados: <strong>disponible</strong> (vacío y listo para que POY lo cargue), <strong>en tránsito</strong> (cargado, camino a su destino) y <strong>en mantenimiento</strong> (fuera de circulación mientras se repara). POY carga el carro escaneando su contenedor elemento; cuando el carro regresa vacío, almacén lo recibe y vuelve a estar disponible. Así POY consulta en tiempo real cuántos carros tiene, cuáles no han regresado y desde hace cuánto.</p>
+
+  <figure>
+    <svg viewBox="0 0 720 220" role="img" aria-labelledby="t1 d1" xmlns="http://www.w3.org/2000/svg">
+      <title id="t1">Ciclo de vida de un carro</title>
+      <desc id="d1">Un carro disponible pasa a en tránsito cuando POY lo carga, regresa a disponible cuando almacén lo recibe, y puede pasar a mantenimiento y volver.</desc>
+      <defs><marker id="p" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#57606f"/></marker></defs>
+      <rect class="svg-caja" x="20" y="70" width="170" height="70" rx="10"/>
+      <text class="svg-texto" x="105" y="102" text-anchor="middle" font-weight="700">Disponible</text>
+      <text class="svg-suave" x="105" y="122" text-anchor="middle">vacío, listo para POY</text>
+      <rect class="svg-caja" x="275" y="70" width="170" height="70" rx="10"/>
+      <text class="svg-texto" x="360" y="102" text-anchor="middle" font-weight="700">En tránsito</text>
+      <text class="svg-suave" x="360" y="122" text-anchor="middle">cargado, con producto</text>
+      <rect class="svg-caja" x="530" y="70" width="170" height="70" rx="10"/>
+      <text class="svg-texto" x="615" y="102" text-anchor="middle" font-weight="700">En mantenimiento</text>
+      <text class="svg-suave" x="615" y="122" text-anchor="middle">fuera de circulación</text>
+      <path class="svg-flecha" d="M190,92 L275,92" marker-end="url(#p)"/>
+      <text class="svg-suave" x="232" y="82" text-anchor="middle">POY carga</text>
+      <path class="svg-flecha" d="M275,120 L190,120" marker-end="url(#p)"/>
+      <text class="svg-suave" x="232" y="140" text-anchor="middle">almacén recibe</text>
+      <path class="svg-flecha" d="M105,70 C105,10 615,10 615,70" marker-end="url(#p)"/>
+      <text class="svg-suave" x="360" y="32" text-anchor="middle">entra a mantenimiento</text>
+      <path class="svg-flecha" d="M615,140 C615,205 105,205 105,140" marker-end="url(#p)"/>
+      <text class="svg-suave" x="360" y="198" text-anchor="middle">sale de mantenimiento</text>
+    </svg>
+    <figcaption>Figura 1. Ciclo de vida de un carro y quién provoca cada cambio.</figcaption>
+  </figure>
+</section>
+
+<section id="funcionalidades">
+  <h2>Funcionalidades</h2>
+  <ul>
+    <li><strong>Inventario en tiempo real.</strong> La pantalla Carros muestra todos los carros con su estado, cuántos hay de cada estado y desde hace cuánto están así. Se filtra tocando la tarjeta de un estado.</li>
+    <li><strong>Carga de carros (POY).</strong> Se registra qué carro se carga y su contenedor elemento. El cambio de estado es atómico: si dos personas intentan cargar el mismo carro a la vez, solo una lo logra y la otra recibe un aviso claro.</li>
+    <li><strong>Recepción (almacén).</strong> Se recibe el carro vacío escribiendo o escaneando su contenedor elemento, que es lo que lo identifica de forma única.</li>
+    <li><strong>Mantenimiento (POY y DTY).</strong> Se registra la fecha de entrada y de salida de mantenimiento de cada carro, y para esto basta el número del carro.</li>
+    <li><strong>Historial de cargas.</strong> Cada carga queda guardada con quién, cuándo y qué contenedor elemento, para responder por qué un carro tardó tanto.</li>
+    <li><strong>Roles.</strong> Cada usuario solo ve las acciones de su proceso: POY, almacén, DTY, Twisting o administrador.</li>
+    <li><strong>Instalable y con lectura sin conexión.</strong> Se instala en el celular como una aplicación y, sin señal, sigue mostrando lo último consultado. Registrar operaciones siempre exige conexión, para no duplicar movimientos.</li>
+  </ul>
+</section>
+
+<section id="arquitectura">
+  <h2>Arquitectura</h2>
+  <p>Tres piezas independientes, cada una con una sola responsabilidad. La aplicación web no toca la base de datos: todo pasa por la API, que es la única que conoce las reglas del negocio.</p>
+
+  <figure>
+    <svg viewBox="0 0 720 200" role="img" aria-labelledby="t2 d2" xmlns="http://www.w3.org/2000/svg">
+      <title id="t2">Arquitectura del sistema</title>
+      <desc id="d2">El usuario usa la aplicación Angular en Vercel, que llama por HTTPS con un token a la API FastAPI en Render, que guarda los datos en PostgreSQL en Supabase.</desc>
+      <defs><marker id="q" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#57606f"/></marker></defs>
+      <rect class="svg-caja" x="10" y="60" width="150" height="80" rx="10"/>
+      <text class="svg-texto" x="85" y="95" text-anchor="middle" font-weight="700">Usuario</text>
+      <text class="svg-suave" x="85" y="115" text-anchor="middle">celular o PC</text>
+      <rect class="svg-caja" x="205" y="60" width="150" height="80" rx="10"/>
+      <text class="svg-texto" x="280" y="95" text-anchor="middle" font-weight="700">Aplicación web</text>
+      <text class="svg-suave" x="280" y="115" text-anchor="middle">Angular en Vercel</text>
+      <rect class="svg-caja" x="400" y="60" width="150" height="80" rx="10"/>
+      <text class="svg-texto" x="475" y="95" text-anchor="middle" font-weight="700">API REST</text>
+      <text class="svg-suave" x="475" y="115" text-anchor="middle">FastAPI en Render</text>
+      <rect class="svg-caja" x="595" y="60" width="120" height="80" rx="10"/>
+      <text class="svg-texto" x="655" y="95" text-anchor="middle" font-weight="700">Base de datos</text>
+      <text class="svg-suave" x="655" y="115" text-anchor="middle">PostgreSQL, Supabase</text>
+      <path class="svg-flecha" d="M160,100 L205,100" marker-end="url(#q)"/>
+      <path class="svg-flecha" d="M355,100 L400,100" marker-end="url(#q)"/>
+      <path class="svg-flecha" d="M550,100 L595,100" marker-end="url(#q)"/>
+      <text class="svg-suave" x="378" y="88" text-anchor="middle">HTTPS</text>
+      <text class="svg-suave" x="378" y="156" text-anchor="middle">+ token</text>
+    </svg>
+    <figcaption>Figura 2. Las piezas desplegadas y cómo se comunican.</figcaption>
+  </figure>
+
+  <p>Dentro de la API, los routers solo reciben y responden; las reglas viven en servicios; los modelos y esquemas validan los datos. Las migraciones de la base se aplican solas al arrancar. La seguridad se reparte en capas: la política de contenido del sitio, el token firmado en cada petición y los roles verificados en el servidor. La base tiene además políticas de seguridad por fila (RLS) que bloquean el acceso directo.</p>
+</section>
+
+<section id="tecnologias">
+  <h2>Tecnologías</h2>
+  <table>
+    <thead><tr><th>Capa</th><th>Tecnología</th><th>Por qué</th></tr></thead>
+    <tbody>
+      <tr><td>Interfaz</td><td>Angular 22 con signals, Vitest</td><td>Pantallas reactivas y sin dependencias de más; 175 pruebas.</td></tr>
+      <tr><td>API</td><td>FastAPI, SQLAlchemy 2, Alembic, pytest</td><td>Validación automática, migraciones versionadas y 220 pruebas.</td></tr>
+      <tr><td>Base de datos</td><td>PostgreSQL en Supabase; SQLite en desarrollo</td><td>Datos reales en producción y pruebas rápidas en local.</td></tr>
+      <tr><td>Autenticación</td><td>Token JWT con vencimiento de 8 horas y roles</td><td>Sin sesiones guardadas en el servidor.</td></tr>
+      <tr><td>Despliegue</td><td>Vercel (web), Render (API), GitHub Actions (CI)</td><td>Cada cambio se prueba antes de publicarse.</td></tr>
+      <tr><td>Calidad</td><td>SonarCloud y cobertura del 92 %</td><td>Cero bugs y cero vulnerabilidades, con quality gate aprobado.</td></tr>
+    </tbody>
+  </table>
+  <p>Se evitó a propósito la sobreingeniería: sin colas de mensajes, sin microservicios ni cachés externas. Cada pieza existe porque hay un requisito que la necesita.</p>
+</section>
+
+<section id="manual">
+  <h2>Manual de uso paso a paso</h2>
+
+  <h3>Entrar al sistema</h3>
+  <ol>
+    <li>Abre <a href="https://container-tracking-lilac.vercel.app/login">container-tracking-lilac.vercel.app</a> en el navegador del celular o de la computadora.</li>
+    <li>Escribe tu usuario y tu contraseña, y pulsa <strong>Entrar</strong>. Verás las opciones que corresponden a tu rol.</li>
+    <li>En el celular, usa el menú del navegador y elige <strong>Instalar aplicación</strong> para tenerla como un ícono más.</li>
+  </ol>
+
+  <h3>Cargar un carro (POY)</h3>
+  <ol>
+    <li>Abre <strong>Cargar</strong>.</li>
+    <li>Escribe el número del carro y escanea o escribe su contenedor elemento.</li>
+    <li>Pulsa <strong>Cargar carro</strong>. El carro pasa a <em>en tránsito</em> y queda anotado en el historial.</li>
+  </ol>
+
+  <h3>Recibir un carro vacío (almacén)</h3>
+  <ol>
+    <li>Abre <strong>Recibir</strong>.</li>
+    <li>Escribe o escanea el contenedor elemento del carro que llegó vacío.</li>
+    <li>Pulsa <strong>Recibir carro</strong>. El carro vuelve a estar <em>disponible</em> para POY.</li>
+  </ol>
+
+  <h3>Registrar mantenimiento (POY y DTY)</h3>
+  <ol>
+    <li>Abre <strong>Mantenimiento</strong>, escribe el número del carro y pulsa <strong>Registrar entrada</strong>.</li>
+    <li>Cuando la reparación termine, pulsa <strong>Dar salida</strong>: el carro vuelve a estar disponible.</li>
+  </ol>
+
+  <h3>Consultar el inventario y el historial (todos)</h3>
+  <ol>
+    <li>En <strong>Carros</strong> toca la tarjeta de un estado para ver solo esos carros y desde cuándo están así.</li>
+    <li>En <strong>Historial</strong> busca por número de carro o por contenedor elemento para ver sus cargas anteriores.</li>
+  </ol>
+
+  <figure>
+    <svg viewBox="0 0 720 230" role="img" aria-labelledby="t3 d3" xmlns="http://www.w3.org/2000/svg">
+      <title id="t3">Qué puede hacer cada rol</title>
+      <desc id="d3">Cuadro con las pantallas disponibles para cada rol: todos consultan carros e historial, POY carga, almacén recibe, y POY y DTY registran mantenimiento.</desc>
+      <rect class="svg-caja" x="10" y="10" width="700" height="210" rx="10"/>
+      <text class="svg-texto" x="30" y="42" font-weight="700">Rol</text>
+      <text class="svg-texto" x="190" y="42" font-weight="700" text-anchor="middle">Carros</text>
+      <text class="svg-texto" x="290" y="42" font-weight="700" text-anchor="middle">Historial</text>
+      <text class="svg-texto" x="400" y="42" font-weight="700" text-anchor="middle">Cargar</text>
+      <text class="svg-texto" x="500" y="42" font-weight="700" text-anchor="middle">Recibir</text>
+      <text class="svg-texto" x="620" y="42" font-weight="700" text-anchor="middle">Mantenimiento</text>
+      <line x1="20" y1="54" x2="700" y2="54" stroke="#57606f"/>
+      <text class="svg-texto" x="30" y="84">POY</text>
+      <text class="svg-texto" x="30" y="114">Almacén</text>
+      <text class="svg-texto" x="30" y="144">DTY</text>
+      <text class="svg-texto" x="30" y="174">Twisting</text>
+      <text class="svg-texto" x="30" y="204">Administrador</text>
+      <g class="svg-texto" text-anchor="middle">
+        <text x="190" y="84">✓</text><text x="290" y="84">✓</text><text x="400" y="84">✓</text><text x="620" y="84">✓</text>
+        <text x="190" y="114">✓</text><text x="290" y="114">✓</text><text x="500" y="114">✓</text>
+        <text x="190" y="144">✓</text><text x="290" y="144">✓</text><text x="620" y="144">✓</text>
+        <text x="190" y="174">✓</text><text x="290" y="174">✓</text>
+        <text x="190" y="204">✓</text><text x="290" y="204">✓</text>
+      </g>
+    </svg>
+    <figcaption>Figura 3. Pantallas disponibles según el rol de cada usuario.</figcaption>
+  </figure>
+
+  <p class="nota"><strong>Sin conexión:</strong> puedes consultar lo último que viste, pero no registrar cargas, recepciones ni mantenimiento. Al cerrar sesión se borran los datos guardados en el equipo.</p>
+</section>
+
+<section id="cliente">
+  <h2>Cliente</h2>
+  <p>El cliente es <strong>UTEXA</strong> (United Textile of America), fabricante de hilo de poliéster. Los usuarios directos son los operadores de POY, el personal de almacén y los equipos de DTY y Twisting. El beneficio para ellos es concreto: dejar de buscar carros de urgencia, tener a la vista cuáles faltan por regresar y poder demostrar con fechas cuánto tiempo retiene cada proceso a un carro.</p>
+  <p>El sistema se pensó para convivir con lo que ya existe: NOW sigue siendo el sistema oficial de producción y Container Tracking agrega lo que NOW no muestra, sin cambiar los procesos de calidad ni de almacén.</p>
+</section>
+
+<section id="autor">
+  <h2>Autor</h2>
+  <p>Desarrollado por <strong>Jasson Reyes</strong> como proyecto final del curso, con trabajo de análisis, diseño, desarrollo, pruebas y despliegue. El código completo, las decisiones de diseño y la guía de calidad están en el repositorio.</p>
+  <p>
+    <a href="https://github.com/Jazzon001/Container-Tracking">Repositorio en GitHub</a> ·
+    <a href="https://container-tracking-lilac.vercel.app/">Producto en vivo</a>
+  </p>
+</section>
+
+</main>
+
+<footer>
+  Código de verificación del curso: <code>LEARN-CAP-5BC13866</code>
+</footer>
+
+</body>
+</html>
