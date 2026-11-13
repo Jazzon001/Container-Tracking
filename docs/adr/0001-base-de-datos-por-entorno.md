@@ -28,7 +28,8 @@ El sistema necesita una base de datos relacional con buena concurrencia (al meno
 - **Positivo:** pruebas rápidas, CI sin servicios externos y cambio de entorno sin tocar código.
 - **Positivo:** la cadena de conexión nunca se versiona; vive solo en variables de entorno.
 - **A vigilar:** SQLite y PostgreSQL no se comportan idéntico en todo. Antes del despliegue conviene correr las pruebas también contra PostgreSQL.
-- **Pendiente:** hoy las tablas se crean con `create_all`. Al pasar a producción habrá que decidir cómo versionar los cambios del esquema (por ejemplo, con migraciones).
+- **Resuelto después:** el versionado del esquema se resolvió con migraciones (Alembic), ver el [ADR 0004](0004-migraciones-y-despliegue.md). El primer arranque real en Supabase aplicó las migraciones sin errores.
+- **Sigue pendiente:** correr también la suite de pruebas contra un PostgreSQL real. Hoy las pruebas usan solo SQLite; la compatibilidad con PostgreSQL se verificó generando su SQL y, después, en producción, no en el CI.
 
 ## Principios que lo justifican
 
