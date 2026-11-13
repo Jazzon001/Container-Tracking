@@ -1,0 +1,187 @@
+{
+  "generado_at": "2026-11-13T14:25:03Z",
+  "motor": "postgres",
+  "tablas": [
+    {
+      "nombre": "alembic_version",
+      "filas": 1,
+      "columnas": [
+        {
+          "nombre": "version_num",
+          "tipo": "varchar(32)",
+          "pk": true,
+          "nulo": false
+        }
+      ],
+      "indices": [],
+      "relaciones": [],
+      "politicas_rls": [
+        "alembic_version_sin_acceso_directo"
+      ]
+    },
+    {
+      "nombre": "cargas",
+      "filas": 1,
+      "columnas": [
+        {
+          "nombre": "id",
+          "tipo": "integer",
+          "pk": true,
+          "nulo": false
+        },
+        {
+          "nombre": "carro_id",
+          "tipo": "integer",
+          "nulo": false
+        },
+        {
+          "nombre": "contenedor_elemento",
+          "tipo": "varchar(50)",
+          "nulo": false
+        },
+        {
+          "nombre": "cargada_en",
+          "tipo": "timestamp with time zone",
+          "nulo": false
+        },
+        {
+          "nombre": "recibida_en",
+          "tipo": "timestamp with time zone",
+          "nulo": true
+        }
+      ],
+      "indices": [
+        "ix_cargas_carro_id",
+        "ix_cargas_contenedor_elemento"
+      ],
+      "relaciones": [
+        {
+          "columna": "carro_id",
+          "referencia": "carros.id"
+        }
+      ],
+      "politicas_rls": [
+        "cargas_sin_acceso_directo"
+      ]
+    },
+    {
+      "nombre": "carros",
+      "filas": 1566,
+      "columnas": [
+        {
+          "nombre": "id",
+          "tipo": "integer",
+          "pk": true,
+          "nulo": false
+        },
+        {
+          "nombre": "numero",
+          "tipo": "varchar(50)",
+          "nulo": false
+        },
+        {
+          "nombre": "tipo",
+          "tipo": "tipocarro",
+          "nulo": false
+        },
+        {
+          "nombre": "estado",
+          "tipo": "estadocarro",
+          "nulo": false
+        },
+        {
+          "nombre": "contenedor_elemento",
+          "tipo": "varchar(50)",
+          "nulo": true
+        },
+        {
+          "nombre": "estado_desde",
+          "tipo": "timestamp with time zone",
+          "nulo": false
+        }
+      ],
+      "indices": [
+        "carros_contenedor_elemento_key",
+        "ix_carros_numero",
+        "ix_carros_tipo"
+      ],
+      "relaciones": [],
+      "politicas_rls": [
+        "carros_sin_acceso_directo"
+      ]
+    },
+    {
+      "nombre": "mantenimientos",
+      "filas": 0,
+      "columnas": [
+        {
+          "nombre": "id",
+          "tipo": "integer",
+          "pk": true,
+          "nulo": false
+        },
+        {
+          "nombre": "carro_id",
+          "tipo": "integer",
+          "nulo": false
+        },
+        {
+          "nombre": "fecha_entrada",
+          "tipo": "timestamp with time zone",
+          "nulo": false
+        },
+        {
+          "nombre": "fecha_salida",
+          "tipo": "timestamp with time zone",
+          "nulo": true
+        }
+      ],
+      "indices": [
+        "ix_mantenimientos_carro_id"
+      ],
+      "relaciones": [
+        {
+          "columna": "carro_id",
+          "referencia": "carros.id"
+        }
+      ],
+      "politicas_rls": [
+        "mantenimientos_sin_acceso_directo"
+      ]
+    },
+    {
+      "nombre": "usuarios",
+      "filas": 1,
+      "columnas": [
+        {
+          "nombre": "id",
+          "tipo": "integer",
+          "pk": true,
+          "nulo": false
+        },
+        {
+          "nombre": "username",
+          "tipo": "varchar(50)",
+          "nulo": false
+        },
+        {
+          "nombre": "password_hash",
+          "tipo": "varchar(200)",
+          "nulo": false
+        },
+        {
+          "nombre": "rol",
+          "tipo": "rol",
+          "nulo": false
+        }
+      ],
+      "indices": [
+        "ix_usuarios_username"
+      ],
+      "relaciones": [],
+      "politicas_rls": [
+        "usuarios_sin_acceso_directo"
+      ]
+    }
+  ]
+}
