@@ -1,10 +1,12 @@
+import json
 import re
 
 import pytest
 from sqlalchemy import create_engine
 
 from app.migraciones import aplicar_migraciones
-from scripts.exportar_bd import describir_bd, resumen
+from scripts import exportar_bd
+from scripts.exportar_bd import describir_bd, main, resumen
 
 
 @pytest.fixture
@@ -94,3 +96,24 @@ class TestResumen:
     def test_las_tablas_con_datos_son_las_que_tienen_filas(self, exportacion):
         # alembic_version guarda la versión de las migraciones: siempre tiene una fila.
         assert set(resumen(exportacion)["tablas_con_datos"]) == {"alembic_version", "carros", "usuarios"}
+
+
+class TestMain:
+    def test_no_exporta_si_la_base_no_es_postgresql(self, monkeypatch, motor, tmp_path, capsys):
+        monkeypatch.setattr("app.database.engine", motor)
+        monkeypatch.setattr(exportar_bd, "DESTINO", tmp_path / "salida.json")
+        monkeypatch.setattr("sys.argv", ["exportar_bd"])
+
+        assert main() == 1
+        assert "no PostgreSQL" in capsys.readouterr().out
+        assert not (tmp_path / "salida.json").exists()
+
+    def test_escribe_el_archivo_y_resume_lo_exportado(self, monkeypatch, motor, tmp_path, capsys):
+        destino = tmp_path / "docs" / "db-export.json"
+        monkeypatch.setattr("app.database.engine", motor)
+        monkeypatch.setattr(exportar_bd, "DESTINO", destino)
+        monkeypatch.setattr("sys.argv", ["exportar_bd", "--permitir-otro-motor"])
+
+        assert main() == 0
+        assert json.loads(destino.read_text(encoding="utf-8"))["motor"] == "sqlite"
+        assert "Tablas con datos" in capsys.readouterr().out

@@ -6,3 +6,8 @@ omit =
     test/*
     .venv/*
     venv/*
+
+# El arranque `if __name__ == "__main__":` de los scripts solo llama a main(), que ya se prueba.
+[report]
+exclude_also =
+    if __name__ == .__main__.:

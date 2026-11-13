@@ -1,4 +1,7 @@
-from scripts.generar_cobertura import normalizar_registros, resumen_istanbul, sumar, unir
+import json
+
+from scripts import generar_cobertura
+from scripts.generar_cobertura import main, normalizar_registros, resumen_istanbul, sumar, unir
 
 BACKEND = """SF:app\\main.py
 DA:1,1
@@ -74,3 +77,17 @@ class TestUnir:
 
     def test_la_cobertura_del_conjunto_sale_de_todas_las_lineas(self):
         assert resumen_istanbul(unir(BACKEND, FRONTEND))["total"]["lines"]["pct"] == 83.33
+
+
+def test_main_une_los_dos_reportes_y_escribe_los_archivos(tmp_path, monkeypatch, capsys):
+    (tmp_path / "back.lcov").write_text(BACKEND, encoding="utf-8")
+    (tmp_path / "front.lcov").write_text(FRONTEND, encoding="utf-8")
+    salida = tmp_path / "coverage"
+    monkeypatch.setattr(generar_cobertura, "_lcov_del_backend", lambda: tmp_path / "back.lcov")
+    monkeypatch.setattr(generar_cobertura, "_lcov_del_frontend", lambda: tmp_path / "front.lcov")
+    monkeypatch.setattr(generar_cobertura, "DESTINO", salida)
+
+    assert main() == 0
+    assert "SF:backend/app/main.py" in (salida / "lcov.info").read_text(encoding="utf-8")
+    assert "lines" in json.loads((salida / "coverage-summary.json").read_text(encoding="utf-8"))["total"]
+    assert "Cobertura de líneas del proyecto" in capsys.readouterr().out
