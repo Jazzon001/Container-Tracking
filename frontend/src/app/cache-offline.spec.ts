@@ -7,23 +7,19 @@ describe('olvidarDatosEnCache', () => {
   it('borra las cachés de datos de la API y deja las de la aplicación', async () => {
     const borrar = vi.fn().mockResolvedValue(true);
     vi.stubGlobal('caches', {
-      keys: vi.fn().mockResolvedValue([
-        'ngsw:/:data:dynamic:consultas-de-la-api:cache',
-        'ngsw:/:1234:assets:aplicacion:cache',
-        'ngsw:/:1234:assets:recursos:cache',
-      ]),
+      keys: vi.fn().mockResolvedValue(['carros-datos-v1', 'carros-app-v1']),
       delete: borrar,
     });
 
     await olvidarDatosEnCache();
 
     expect(borrar).toHaveBeenCalledTimes(1);
-    expect(borrar).toHaveBeenCalledWith('ngsw:/:data:dynamic:consultas-de-la-api:cache');
+    expect(borrar).toHaveBeenCalledWith('carros-datos-v1');
   });
 
   it('no hace nada si no hay cachés de datos', async () => {
     const borrar = vi.fn();
-    vi.stubGlobal('caches', { keys: vi.fn().mockResolvedValue(['ngsw:/:1234:assets:aplicacion:cache']), delete: borrar });
+    vi.stubGlobal('caches', { keys: vi.fn().mockResolvedValue(['carros-app-v1']), delete: borrar });
 
     await olvidarDatosEnCache();
 

@@ -89,7 +89,7 @@ describe('AuthService', () => {
   it('al cerrar sesión borra los datos guardados para uso sin conexión', async () => {
     const borrar = vi.fn().mockResolvedValue(true);
     vi.stubGlobal('caches', {
-      keys: vi.fn().mockResolvedValue(['ngsw:/:data:dynamic:consultas-de-la-api:cache']),
+      keys: vi.fn().mockResolvedValue(['carros-datos-v1']),
       delete: borrar,
     });
     const auth = crearServicio();
@@ -97,7 +97,7 @@ describe('AuthService', () => {
     auth.logout();
     await new Promise((resolver) => setTimeout(resolver));
 
-    expect(borrar).toHaveBeenCalledWith('ngsw:/:data:dynamic:consultas-de-la-api:cache');
+    expect(borrar).toHaveBeenCalledWith('carros-datos-v1');
     vi.unstubAllGlobals();
   });
 

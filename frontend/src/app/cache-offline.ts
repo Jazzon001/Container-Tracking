@@ -1,5 +1,5 @@
-/** Fragmento con el que el service worker de Angular nombra las cachés de datos de la API. */
-const CACHE_DE_DATOS = ':data:';
+/** Nombre de la caché donde public/sw.js guarda las consultas de la API (/carros y /cargas). */
+const CACHE_DE_DATOS = 'carros-datos';
 
 /**
  * Borra los datos que el service worker guardó para usar sin conexión. Se llama al cerrar
