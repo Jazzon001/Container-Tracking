@@ -105,8 +105,9 @@ def resumen(exportacion: dict) -> dict:
 
 
 def main() -> int:
+    # Sin argumentos de ruta: el archivo siempre se escribe en DESTINO. Así el script no puede
+    # usarse para escribir en un lugar cualquiera del disco.
     parser = argparse.ArgumentParser(description="Exporta el esquema real de la base de datos.")
-    parser.add_argument("--salida", type=Path, default=DESTINO)
     parser.add_argument("--permitir-otro-motor", action="store_true")
     argumentos = parser.parse_args()
 
@@ -120,13 +121,11 @@ def main() -> int:
         return 1
 
     exportacion = describir_bd(engine)
-    argumentos.salida.parent.mkdir(parents=True, exist_ok=True)
-    argumentos.salida.write_text(
-        json.dumps(exportacion, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
-    )
+    DESTINO.parent.mkdir(parents=True, exist_ok=True)
+    DESTINO.write_text(json.dumps(exportacion, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
     datos = resumen(exportacion)
-    print(f"Exportado a {argumentos.salida}")
+    print(f"Exportado a {DESTINO}")
     print(f"  Motor: {exportacion['motor']}   Generado: {exportacion['generado_at']}")
     print(f"  Tablas: {datos['tablas']}")
     print(f"  Relaciones (llaves foráneas): {datos['relaciones']}")

@@ -8,11 +8,8 @@ Uso (desde la carpeta backend, con el entorno virtual activo y las dependencias 
 frontend instaladas con `npm install`):
     python -m scripts.generar_cobertura
 
-Corre las pruebas del backend y del frontend con cobertura y une los dos reportes. Para
-unir reportes que ya existen, sin volver a correr las pruebas:
-    python -m scripts.generar_cobertura --backend-lcov ruta1 --frontend-lcov ruta2
+Corre las pruebas del backend y del frontend con cobertura y une los dos reportes.
 """
-import argparse
 import json
 import shutil
 import subprocess
@@ -79,7 +76,7 @@ def _correr(comando: list[str], carpeta: Path) -> None:
 def _lcov_del_backend() -> Path:
     destino = Path(tempfile.mkdtemp()) / "backend.lcov"
     _correr(
-        [sys.executable, "-m", "pytest", "-q", "--cov=app", f"--cov-report=lcov:{destino}"],
+        [sys.executable, "-m", "pytest", "-q", "--cov", f"--cov-report=lcov:{destino}"],
         RAIZ / "backend",
     )
     return destino
@@ -95,13 +92,9 @@ def _lcov_del_frontend() -> Path:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Unifica la cobertura del backend y del frontend.")
-    parser.add_argument("--backend-lcov", type=Path)
-    parser.add_argument("--frontend-lcov", type=Path)
-    argumentos = parser.parse_args()
-
-    backend = argumentos.backend_lcov or _lcov_del_backend()
-    frontend = argumentos.frontend_lcov or _lcov_del_frontend()
+    # Sin argumentos de ruta: los reportes se leen y se escriben siempre en lugares fijos.
+    backend = _lcov_del_backend()
+    frontend = _lcov_del_frontend()
     unificado = unir(backend.read_text(encoding="utf-8"), frontend.read_text(encoding="utf-8"))
 
     DESTINO.mkdir(exist_ok=True)

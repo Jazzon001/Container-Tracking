@@ -1,17 +1,22 @@
 """Reescribe el coverage.xml del backend para que SonarCloud reconozca los archivos.
 
-coverage.py escribe cada archivo relativo a la carpeta medida (`database.py`), pero SonarCloud
-analiza el repositorio completo desde la raíz y espera `backend/app/database.py`. Sin este
-ajuste no relaciona la cobertura con el código y la da por inexistente.
+coverage.py escribe cada archivo relativo a la carpeta medida (`app/database.py`), pero
+SonarCloud analiza el repositorio completo desde la raíz y espera `backend/app/database.py`.
+Sin este ajuste no relaciona la cobertura con el código y la da por inexistente.
 
-Uso (desde la carpeta backend):
-    python -m scripts.cobertura_para_sonar coverage.xml sonar-coverage.xml
+Uso (desde la carpeta backend, después de correr pytest con --cov-report=xml):
+    python -m scripts.cobertura_para_sonar
+
+Lee `coverage.xml` y escribe `sonar-coverage.xml`, ambos en la carpeta actual. No recibe
+rutas por argumentos: así no se puede usar para leer o escribir en otro lugar del disco.
 """
 import re
 import sys
 from pathlib import Path
 
-PREFIJO = "backend/app/"
+PREFIJO = "backend/"  # coverage.py mide desde la carpeta backend (ver .coveragerc)
+ENTRADA = Path("coverage.xml")
+SALIDA = Path("sonar-coverage.xml")
 
 
 def reescribir_rutas(xml: str, prefijo: str = PREFIJO) -> str:
@@ -24,15 +29,14 @@ def reescribir_rutas(xml: str, prefijo: str = PREFIJO) -> str:
     return re.sub(r"<sources>.*?</sources>", "<sources><source>.</source></sources>", xml, flags=re.S)
 
 
-def main(argumentos: list[str]) -> int:
-    if len(argumentos) != 2:
-        print("Uso: python -m scripts.cobertura_para_sonar <entrada.xml> <salida.xml>")
+def main() -> int:
+    if not ENTRADA.exists():
+        print(f"No existe {ENTRADA}: corre antes pytest con --cov-report=xml.")
         return 1
-    entrada, salida = Path(argumentos[0]), Path(argumentos[1])
-    salida.write_text(reescribir_rutas(entrada.read_text(encoding="utf-8")), encoding="utf-8")
-    print(f"Escrito {salida}")
+    SALIDA.write_text(reescribir_rutas(ENTRADA.read_text(encoding="utf-8")), encoding="utf-8")
+    print(f"Escrito {SALIDA}")
     return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    sys.exit(main())

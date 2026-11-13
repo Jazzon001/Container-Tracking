@@ -1,19 +1,20 @@
+from scripts import cobertura_para_sonar
 from scripts.cobertura_para_sonar import main, reescribir_rutas
 
 XML = """<?xml version="1.0" ?>
 <coverage>
 	<sources>
-		<source>C:\\proyecto\\backend\\app</source>
+		<source>C:\\proyecto\\backend</source>
 	</sources>
 	<packages>
-		<package name=".">
+		<package name="app">
 			<classes>
-				<class name="database.py" filename="database.py"><lines/></class>
+				<class name="database.py" filename="app/database.py"><lines/></class>
 			</classes>
 		</package>
-		<package name="routers">
+		<package name="app.routers">
 			<classes>
-				<class name="auth.py" filename="routers\\auth.py"><lines/></class>
+				<class name="auth.py" filename="app\\routers\\auth.py"><lines/></class>
 			</classes>
 		</package>
 	</packages>
@@ -39,13 +40,23 @@ def test_no_toca_el_resto_del_reporte():
     assert '<class name="database.py"' in reescribir_rutas(XML)
 
 
-def test_escribe_el_archivo_de_salida(tmp_path):
-    entrada, salida = tmp_path / "coverage.xml", tmp_path / "sonar-coverage.xml"
-    entrada.write_text(XML, encoding="utf-8")
+def test_lee_coverage_xml_y_escribe_sonar_coverage_xml_en_la_carpeta_actual(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "coverage.xml").write_text(XML, encoding="utf-8")
 
-    assert main([str(entrada), str(salida)]) == 0
-    assert 'filename="backend/app/database.py"' in salida.read_text(encoding="utf-8")
+    assert main() == 0
+    assert 'filename="backend/app/database.py"' in (tmp_path / "sonar-coverage.xml").read_text(encoding="utf-8")
 
 
-def test_pide_los_dos_argumentos():
-    assert main(["solo-uno.xml"]) == 1
+def test_avisa_si_falta_el_reporte_de_entrada(tmp_path, monkeypatch, capsys):
+    monkeypatch.chdir(tmp_path)
+
+    assert main() == 1
+    assert "coverage.xml" in capsys.readouterr().out
+    assert not (tmp_path / "sonar-coverage.xml").exists()
+
+
+def test_no_acepta_rutas_por_la_linea_de_comandos():
+    # Las rutas son fijas: el script no puede leer ni escribir en otro lugar.
+    assert cobertura_para_sonar.ENTRADA.name == "coverage.xml"
+    assert cobertura_para_sonar.SALIDA.name == "sonar-coverage.xml"
