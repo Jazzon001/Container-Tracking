@@ -11,7 +11,10 @@ def test_el_hash_no_contiene_la_contrasena():
 
 
 def test_misma_contrasena_genera_hashes_distintos():
-    assert hashear_password("clave-segura-123") != hashear_password("clave-segura-123")
+    # Cada llamada usa una sal aleatoria distinta: dos hashes de la misma clave no coinciden.
+    primero = hashear_password("clave-segura-123")
+    segundo = hashear_password("clave-segura-123")
+    assert primero != segundo
 
 
 def test_verifica_la_contrasena_correcta_y_rechaza_la_incorrecta():
