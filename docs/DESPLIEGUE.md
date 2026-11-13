@@ -114,21 +114,21 @@ La verificación del curso (entregable "Producto publicado en un dominio real") 
 
 | Se comprueba | Dónde está |
 |---|---|
-| PWA: manifiesto, service worker e íconos | `frontend/public/manifest.webmanifest`, `ngsw-config.json`, `frontend/public/icons/` |
+| PWA: manifiesto, service worker e íconos | `frontend/public/manifest.webmanifest`, `frontend/public/sw.js`, `frontend/public/icons/` |
 | Responsive con `@media` | `frontend/src/styles.css` |
 | SEO y Open Graph | `frontend/src/index.html` y la imagen `icons/og-image.png` |
 | Cabeceras de seguridad | `frontend/vercel.json` |
 | 404 manejado | `frontend/vercel.json` (última regla de `rewrites`) y `frontend/public/404.html`: página propia, con estado 200 |
 | `robots.txt` y mapa del sitio | `frontend/public/robots.txt` y `sitemap.xml` |
 | Inicio de sesión real | La pantalla `/login`; su HTML trae el formulario con campo de contraseña (`login.html`, generado por `tools/crear-login-estatico.mjs` al compilar) |
-| Service worker | `/sw.js` (delega en el de Angular) |
+| Service worker | `/sw.js` (propio, escrito a mano: estrategia «la red primero») |
 | Portal privado que no filtra contenido sin sesión | `/carros`: sin la cookie de sesión, el servidor redirige (307) a `/login`; los datos vienen de la API y exigen token (ver el ADR 0006) |
 | Healthcheck de la API en JSON | `https://<tu-api>.onrender.com/health` |
 | Código de verificación publicado | `README.md`, la etiqueta `meta name="verificacion"` y `/verificacion.txt` |
 
 **Antes de verificar**, abre `https://<tu-api>.onrender.com/health` para despertar la API (Render gratis duerme): si está dormida, el chequeo puede agotar el tiempo.
 
-**Si cambias de dominio**, actualiza las direcciones escritas en estos archivos: `frontend/src/index.html`, `frontend/ngsw-config.json`, `frontend/vercel.json` (política de seguridad), `frontend/public/robots.txt` y `frontend/public/sitemap.xml`.
+**Si cambias de dominio**, actualiza las direcciones escritas en estos archivos: `frontend/src/index.html`, `frontend/public/sw.js`, `frontend/vercel.json` (política de seguridad), `frontend/public/robots.txt` y `frontend/public/sitemap.xml`.
 
 ## Dominio propio (opcional)
 
