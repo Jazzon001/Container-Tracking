@@ -45,26 +45,45 @@ describe('HistorialService', () => {
 
   it('filtra por el número del carro', () => {
     servicio.listar({ numero: 'P001A' }).subscribe();
-    http.expectOne('http://api.test/cargas?limite=100&numero=P001A').flush([]);
+
+    const peticion = http.expectOne('http://api.test/cargas?limite=100&numero=P001A');
+    expect(peticion.request.params.get('numero')).toBe('P001A');
+    expect(peticion.request.params.has('contenedor_elemento')).toBe(false);
+    peticion.flush([]);
   });
 
   it('filtra por el contenedor elemento', () => {
     servicio.listar({ contenedor: '100123' }).subscribe();
-    http.expectOne('http://api.test/cargas?limite=100&contenedor_elemento=100123').flush([]);
+
+    const peticion = http.expectOne('http://api.test/cargas?limite=100&contenedor_elemento=100123');
+    expect(peticion.request.params.get('contenedor_elemento')).toBe('100123');
+    expect(peticion.request.params.has('numero')).toBe(false);
+    peticion.flush([]);
   });
 
   it('combina los dos filtros', () => {
     servicio.listar({ numero: 'P001A', contenedor: '100123' }).subscribe();
-    http.expectOne('http://api.test/cargas?limite=100&numero=P001A&contenedor_elemento=100123').flush([]);
+
+    const peticion = http.expectOne('http://api.test/cargas?limite=100&numero=P001A&contenedor_elemento=100123');
+    expect(peticion.request.params.get('numero')).toBe('P001A');
+    expect(peticion.request.params.get('contenedor_elemento')).toBe('100123');
+    peticion.flush([]);
   });
 
   it('ignora los filtros vacíos', () => {
     servicio.listar({ numero: '', contenedor: '' }).subscribe();
-    http.expectOne('http://api.test/cargas?limite=100').flush([]);
+
+    const peticion = http.expectOne('http://api.test/cargas?limite=100');
+    expect(peticion.request.params.has('numero')).toBe(false);
+    expect(peticion.request.params.has('contenedor_elemento')).toBe(false);
+    peticion.flush([]);
   });
 
   it('permite cambiar el límite', () => {
     servicio.listar({}, 500).subscribe();
-    http.expectOne('http://api.test/cargas?limite=500').flush([]);
+
+    const peticion = http.expectOne('http://api.test/cargas?limite=500');
+    expect(peticion.request.params.get('limite')).toBe('500');
+    peticion.flush([]);
   });
 });

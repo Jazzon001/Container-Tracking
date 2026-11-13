@@ -130,8 +130,10 @@ describe('CarrosService', () => {
     it('no busca por el número del carro', () => {
       servicio.entregarPorContenedor('100123').subscribe();
 
-      http.expectNone('http://api.test/carros?numero=100123');
-      http.expectOne('http://api.test/carros?contenedor_elemento=100123').flush([EN_TRANSITO]);
+      const busqueda = http.expectOne('http://api.test/carros?contenedor_elemento=100123');
+      expect(busqueda.request.params.get('contenedor_elemento')).toBe('100123');
+      expect(busqueda.request.params.has('numero')).toBe(false);
+      busqueda.flush([EN_TRANSITO]);
       http.expectOne('http://api.test/carros/7/entrega').flush(CARRO);
     });
 
