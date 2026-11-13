@@ -23,14 +23,21 @@ jobs:
       - name: Instalar dependencias
         run: pip install -r requirements-dev.txt
 
+      # Si la cobertura baja del 80 %, el CI falla.
       - name: Ejecutar pruebas con cobertura
-        run: pytest --cov=app --cov-report=term-missing --cov-report=xml
+        run: pytest --cov=app --cov-report=term-missing --cov-report=xml --cov-fail-under=80
 
-      - name: Guardar reporte de cobertura
+      # SonarCloud analiza desde la raíz del repositorio y necesita rutas como backend/app/...
+      - name: Preparar la cobertura para SonarCloud
+        run: python -m scripts.cobertura_para_sonar coverage.xml sonar-coverage.xml
+
+      - name: Guardar reportes de cobertura
         uses: actions/upload-artifact@v4
         with:
           name: cobertura
-          path: backend/coverage.xml
+          path: |
+            backend/coverage.xml
+            backend/sonar-coverage.xml
 
   frontend:
     runs-on: ubuntu-latest
@@ -49,8 +56,43 @@ jobs:
       - name: Instalar dependencias
         run: npm ci
 
-      - name: Ejecutar pruebas
-        run: npx ng test --no-watch
+      # El umbral mínimo de cobertura está en angular.json.
+      - name: Ejecutar pruebas con cobertura
+        run: npx ng test --no-watch --coverage --coverage-reporters=lcov --coverage-reporters=text-summary
 
       - name: Compilar
         run: npm run build
+
+      - name: Guardar reporte de cobertura
+        uses: actions/upload-artifact@v4
+        with:
+          name: cobertura-frontend
+          path: frontend/coverage
+
+  # Análisis de calidad en SonarCloud. Solo corre si el secreto SONAR_TOKEN existe
+  # (Settings > Secrets and variables > Actions); sin él, el CI sigue funcionando igual.
+  sonar:
+    needs: [backend, frontend]
+    runs-on: ubuntu-latest
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # SonarCloud necesita todo el historial para detectar el código nuevo
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: cobertura
+          path: backend
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: cobertura-frontend
+          path: frontend/coverage
+
+      - name: Analizar con SonarCloud
+        if: env.SONAR_TOKEN != ''
+        uses: SonarSource/sonarqube-scan-action@v5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
