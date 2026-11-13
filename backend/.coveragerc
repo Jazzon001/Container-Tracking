@@ -1,0 +1,8 @@
+# Qué se mide con `pytest --cov`: todo el código de la carpeta backend, menos las pruebas
+# y los entornos virtuales.
+[run]
+source = .
+omit =
+    test/*
+    .venv/*
+    venv/*
