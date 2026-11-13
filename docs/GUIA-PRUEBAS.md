@@ -219,6 +219,26 @@ python -m scripts.importar_carros ..\datos\Carros.xlsx --guardar
 - Si la base local es de antes de que existiera el tipo de carro, bórrala y vuelve a crear tu usuario (ver la sección 5).
 - Para cargarlos en producción (Supabase), el mismo comando se ejecuta con `DATABASE_URL` apuntando a esa base. Esa cadena es secreta: defínela solo en tu terminal, nunca en un archivo del proyecto.
 
+## 5.5 Exportar el esquema real de la base (entregable del curso)
+
+`docs/db-export.json` es una fotografía de la base **de producción**: sus tablas, columnas, llaves primarias, índices, relaciones, cuántas filas tiene cada tabla y sus políticas de seguridad por filas. Se genera con un script que lee la base de verdad (no los modelos del código).
+
+Antes, la migración de seguridad (`0003`) debe estar aplicada en Supabase: se aplica sola cuando la API arranca en Render tras subir los cambios. Después, desde `backend`, con el entorno activo y la cadena de Supabase definida **solo en tu terminal**:
+
+```powershell
+$env:DATABASE_URL = 'PEGA-AQUÍ-TU-CADENA-DEL-SESSION-POOLER'
+```
+```powershell
+python -m scripts.exportar_bd
+```
+```powershell
+Remove-Item Env:DATABASE_URL
+```
+
+El script imprime los números que pide el formulario del curso (tablas, relaciones, tabla con más filas, tablas con datos y tablas con políticas), calculados del propio archivo, así siempre coinciden. Si apuntas por error a la base local, se niega a exportar.
+
+Después sube el archivo: `git add docs/db-export.json`, un commit y `git push`. El verificador lo lee desde GitHub y exige que se haya generado en los últimos 45 días: si pasa el plazo, se vuelve a generar.
+
 ## 6. Flujo de trabajo diario con Git
 
 Un cambio pequeño y completo por vez:

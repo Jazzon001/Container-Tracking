@@ -96,6 +96,7 @@ Los routers solo manejan HTTP. Las reglas de negocio están en los servicios, qu
 - [ADR 0004: Migraciones con Alembic y despliegue en Render, Vercel y Supabase](adr/0004-migraciones-y-despliegue.md)
 - [ADR 0005: Historial de cargas como tabla propia](adr/0005-historial-de-cargas.md)
 - [ADR 0006: PWA, uso sin conexión y endurecimiento del sitio publicado](adr/0006-pwa-y-endurecimiento-del-sitio.md)
+- [ADR 0007: La API como única puerta a los datos, con seguridad por filas](adr/0007-acceso-a-datos-y-rls.md)
 
 La guía paso a paso para publicar el sistema está en [DESPLIEGUE.md](DESPLIEGUE.md).
 
