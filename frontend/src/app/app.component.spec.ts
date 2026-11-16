@@ -4,6 +4,7 @@ import { Router, provideRouter } from '@angular/router';
 import { vi } from 'vitest';
 import { App } from './app.component';
 import { AuthService, Rol } from './auth.service';
+import { Accion, PERMISOS } from './perfiles';
 
 describe('App', () => {
   let fixture: ComponentFixture<App>;
@@ -16,8 +17,7 @@ describe('App', () => {
     const auth = {
       autenticado: signal(autenticado),
       logout,
-      // Igual que el servicio real: el administrador puede todo.
-      puede: (...roles: Rol[]) => rol !== null && (rol === 'admin' || roles.includes(rol)),
+      puede: (accion: Accion) => rol !== null && PERMISOS[rol][accion],
     };
     await TestBed.configureTestingModule({
       imports: [App],
@@ -83,30 +83,29 @@ describe('App', () => {
     });
   });
 
-  describe('navegación según el rol', () => {
-    it('POY ve Carros, Cargar, Mantenimiento e Historial', async () => {
-      await crear(true, 'poy');
-      expect(enlaces()).toEqual(['Carros', 'Cargar', 'Mantenimiento', 'Historial']);
-    });
+  describe('navegación según el perfil', () => {
+    const COMPLETO = ['Carros', 'Cargar', 'Recibir', 'Mantenimiento', 'Historial'];
+    const SIN_CARGAR = ['Carros', 'Recibir', 'Mantenimiento', 'Historial'];
 
-    it('Almacén ve Carros, Recibir e Historial', async () => {
+    it.each(['digitador_poy', 'digitador_dty', 'digitador_twt', 'admin', 'poy', 'dty'] as Rol[])(
+      'quien carga ve el menú completo: %s',
+      async (rol) => {
+        await crear(true, rol);
+        expect(enlaces()).toEqual(COMPLETO);
+      },
+    );
+
+    it.each(['intermedio_poy', 'empacador_poy', 'empacador_dty', 'twisting', 'empacador_twt'] as Rol[])(
+      'quien libera no ve el menú Cargar: %s',
+      async (rol) => {
+        await crear(true, rol);
+        expect(enlaces()).toEqual(SIN_CARGAR);
+      },
+    );
+
+    it('Almacén (perfil anterior) ve Carros, Recibir e Historial', async () => {
       await crear(true, 'almacen');
       expect(enlaces()).toEqual(['Carros', 'Recibir', 'Historial']);
-    });
-
-    it('DTY ve Carros, Mantenimiento e Historial', async () => {
-      await crear(true, 'dty');
-      expect(enlaces()).toEqual(['Carros', 'Mantenimiento', 'Historial']);
-    });
-
-    it('Twisting solo consulta: Carros e Historial', async () => {
-      await crear(true, 'twisting');
-      expect(enlaces()).toEqual(['Carros', 'Historial']);
-    });
-
-    it('el administrador ve todo', async () => {
-      await crear(true, 'admin');
-      expect(enlaces()).toEqual(['Carros', 'Cargar', 'Recibir', 'Mantenimiento', 'Historial']);
     });
   });
 });

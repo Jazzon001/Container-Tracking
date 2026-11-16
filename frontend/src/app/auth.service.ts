@@ -3,9 +3,10 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import { API_URL } from './api.config';
 import { olvidarDatosEnCache } from './cache-offline';
+import { Accion, PERMISOS, Permisos, Rol } from './perfiles';
 import { marcarSesionCerrada, marcarSesionIniciada } from './sesion-cookie';
 
-export type Rol = 'poy' | 'almacen' | 'dty' | 'twisting' | 'admin';
+export type { Rol } from './perfiles';
 
 export interface TokenResponse {
   access_token: string;
@@ -45,6 +46,11 @@ export class AuthService {
   readonly token = this._token.asReadonly();
   readonly rol = this._rol.asReadonly();
   readonly autenticado = computed(() => this._token() !== null);
+  /** Lo que puede hacer el perfil de la sesión; null si no hay sesión o el perfil no se conoce. */
+  readonly permisos = computed<Permisos | null>(() => {
+    const rol = this._rol();
+    return rol === null ? null : (PERMISOS[rol] ?? null);
+  });
 
   constructor() {
     // Una sesión guardada de antes (o de otra pestaña) también debe tener su cookie marcadora.
@@ -63,13 +69,9 @@ export class AuthService {
     void olvidarDatosEnCache();
   }
 
-  /**
-   * ¿Puede el usuario actual hacer lo que hacen estos roles? El administrador siempre.
-   * Sirve para mostrar u ocultar opciones; la API valida el permiso de todos modos.
-   */
-  puede(...roles: Rol[]): boolean {
-    const rol = this._rol();
-    return rol !== null && (rol === 'admin' || roles.includes(rol));
+  /** ¿Puede el perfil actual hacer esto? Sirve para mostrar u ocultar opciones; la API valida de todos modos. */
+  puede(accion: Accion): boolean {
+    return this.permisos()?.[accion] ?? false;
   }
 
   private guardar(token: string | null, rol: Rol | null): void {

@@ -10,6 +10,7 @@ import {
   TIPOS,
   TipoCarro,
 } from './carro.model';
+import { AuthService } from './auth.service';
 import { CarrosService } from './carros.service';
 import { hace } from './tiempo';
 
@@ -23,19 +24,24 @@ export const INTERVALO_ACTUALIZACION_MS = new InjectionToken<number>('INTERVALO_
   selector: 'app-carros',
   template: `
     <h1>Carros</h1>
+    @if (procesoPropio(); as proceso) {
+      <p class="detalle proceso">Carros de {{ etiquetasTipo[proceso] }}</p>
+    }
 
     @if (error()) { <p role="alert">{{ error() }}</p> }
 
-    <div class="filtros">
-      <label>
-        Tipo
-        <select name="tipo" #selectorTipo [value]="filtroTipo()" (change)="elegirTipo(selectorTipo.value)">
-          <option value="">Todos</option>
-          @for (tipo of tipos; track tipo) {
-            <option [value]="tipo">{{ etiquetasTipo[tipo] }}</option>
-          }
-        </select>
-      </label>
+    <div class="filtros" [class.sin-tipo]="procesoPropio()">
+      @if (!procesoPropio()) {
+        <label>
+          Tipo
+          <select name="tipo" #selectorTipo [value]="filtroTipo()" (change)="elegirTipo(selectorTipo.value)">
+            <option value="">Todos</option>
+            @for (tipo of tipos; track tipo) {
+              <option [value]="tipo">{{ etiquetasTipo[tipo] }}</option>
+            }
+          </select>
+        </label>
+      }
       <label>
         Buscar carro
         <input
@@ -102,6 +108,7 @@ export const INTERVALO_ACTUALIZACION_MS = new InjectionToken<number>('INTERVALO_
   `,
   styles: `
     .filtros { display: grid; grid-template-columns: 1fr 2fr; gap: 0.75rem; margin-bottom: 0.5rem; }
+    .filtros.sin-tipo { grid-template-columns: 1fr; }
     .filtros label { margin-bottom: 0.5rem; }
     .resumen { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-bottom: 1rem; }
     .tarjeta {
@@ -130,6 +137,7 @@ export const INTERVALO_ACTUALIZACION_MS = new InjectionToken<number>('INTERVALO_
 })
 export class CarrosComponent implements OnInit {
   private readonly carrosService = inject(CarrosService);
+  private readonly auth = inject(AuthService);
   private readonly recarga = new Subject<void>();
 
   readonly estados = ESTADOS;
@@ -137,6 +145,8 @@ export class CarrosComponent implements OnInit {
   readonly tipos = TIPOS;
   readonly etiquetasTipo = ETIQUETAS_TIPO;
   readonly hace = hace;
+  /** El proceso del perfil, si solo ve uno: entonces no hace falta elegir el tipo. */
+  readonly procesoPropio = computed(() => this.auth.permisos()?.tipo ?? null);
   readonly carros = signal<Carro[]>([]);
   readonly filtro = signal<EstadoCarro | null>(null);
   readonly filtroTipo = signal<TipoCarro | ''>('');

@@ -2,7 +2,7 @@ import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRouteSnapshot, Router, RouterStateSnapshot, provideRouter } from '@angular/router';
 import { vi } from 'vitest';
-import { authGuard, rolGuard } from './auth.guard';
+import { authGuard, permisoGuard } from './auth.guard';
 import { AuthService } from './auth.service';
 
 function ejecutar(guardia: typeof authGuard, auth: object) {
@@ -28,15 +28,15 @@ describe('authGuard', () => {
   });
 });
 
-describe('rolGuard', () => {
-  it('deja pasar si el usuario puede lo que pide la ruta', () => {
+describe('permisoGuard', () => {
+  it('deja pasar si el usuario tiene el permiso que pide la ruta', () => {
     const puede = vi.fn().mockReturnValue(true);
-    expect(ejecutar(rolGuard('poy'), { puede })).toBe(true);
-    expect(puede).toHaveBeenCalledWith('poy');
+    expect(ejecutar(permisoGuard('cargar'), { puede })).toBe(true);
+    expect(puede).toHaveBeenCalledWith('cargar');
   });
 
-  it('manda a la lista de carros si el rol no alcanza', () => {
+  it('manda a la lista de carros si el perfil no tiene el permiso', () => {
     const puede = vi.fn().mockReturnValue(false);
-    expect(urlDe(ejecutar(rolGuard('almacen'), { puede }))).toBe('/carros');
+    expect(urlDe(ejecutar(permisoGuard('liberar'), { puede }))).toBe('/carros');
   });
 });

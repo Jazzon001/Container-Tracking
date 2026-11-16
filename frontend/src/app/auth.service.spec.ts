@@ -130,30 +130,42 @@ describe('AuthService', () => {
     });
   });
 
-  describe('puede', () => {
-    it('permite al rol indicado', () => {
+  describe('permisos', () => {
+    it('el digitador puede cargar, liberar y mantener, y ve solo su proceso', () => {
       const auth = crearServicio();
-      iniciarSesion(auth, 'poy');
-      expect(auth.puede('poy')).toBe(true);
-      expect(auth.puede('almacen', 'poy')).toBe(true);
+      iniciarSesion(auth, 'digitador_dty');
+      expect(auth.puede('cargar')).toBe(true);
+      expect(auth.puede('liberar')).toBe(true);
+      expect(auth.puede('mantener')).toBe(true);
+      expect(auth.permisos()?.tipo).toBe('dty');
     });
 
-    it('no permite a otro rol', () => {
+    it('quien libera no puede cargar', () => {
       const auth = crearServicio();
-      iniciarSesion(auth, 'poy');
-      expect(auth.puede('almacen')).toBe(false);
+      iniciarSesion(auth, 'intermedio_poy');
+      expect(auth.puede('cargar')).toBe(false);
+      expect(auth.puede('liberar')).toBe(true);
+      expect(auth.permisos()?.tipo).toBe('poy');
     });
 
-    it('permite todo al administrador', () => {
+    it('el administrador puede todo y ve todos los procesos', () => {
       const auth = crearServicio();
       iniciarSesion(auth, 'admin');
-      expect(auth.puede('almacen')).toBe(true);
-      expect(auth.puede('poy')).toBe(true);
+      expect(auth.puede('cargar')).toBe(true);
+      expect(auth.permisos()?.tipo).toBeNull();
     });
 
     it('no permite nada sin sesión', () => {
       const auth = crearServicio();
-      expect(auth.puede('poy')).toBe(false);
+      expect(auth.puede('cargar')).toBe(false);
+      expect(auth.permisos()).toBeNull();
+    });
+
+    it('un perfil que no se conoce no puede nada, en vez de fallar', () => {
+      const auth = crearServicio();
+      iniciarSesion(auth, 'perfil-del-futuro');
+      expect(auth.puede('liberar')).toBe(false);
+      expect(auth.permisos()).toBeNull();
     });
   });
 });

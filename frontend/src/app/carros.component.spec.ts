@@ -1,7 +1,9 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { signal } from '@angular/core';
 import { Subject, of, throwError } from 'rxjs';
 import { vi } from 'vitest';
-import { Carro } from './carro.model';
+import { AuthService } from './auth.service';
+import { Carro, TipoCarro } from './carro.model';
 import { CarrosComponent, INTERVALO_ACTUALIZACION_MS } from './carros.component';
 import { CarrosService } from './carros.service';
 
@@ -18,12 +20,14 @@ describe('CarrosComponent', () => {
   let el: HTMLElement;
   let listar: ReturnType<typeof vi.fn>;
 
-  async function crear(respuesta: unknown, intervaloMs = 600_000) {
+  /** `proceso`: el proceso del perfil (null: ve todos, como el administrador). */
+  async function crear(respuesta: unknown, intervaloMs = 600_000, proceso: TipoCarro | null = null) {
     listar = vi.fn().mockReturnValue(respuesta);
     await TestBed.configureTestingModule({
       imports: [CarrosComponent],
       providers: [
         { provide: CarrosService, useValue: { listar } },
+        { provide: AuthService, useValue: { permisos: signal({ tipo: proceso }) } },
         { provide: INTERVALO_ACTUALIZACION_MS, useValue: intervaloMs },
       ],
     }).compileComponents();
@@ -141,6 +145,20 @@ describe('CarrosComponent', () => {
       fixture.detectChanges();
 
       expect(numeros()).toEqual(['C-001', 'D-003']);
+    });
+  });
+
+  describe('perfil de un solo proceso', () => {
+    it('no ofrece elegir el tipo y avisa de qué proceso son los carros', async () => {
+      await crear(of(CARROS.filter((c) => c.tipo === 'poy')), 600_000, 'poy');
+      expect(el.querySelector('select[name="tipo"]')).toBeNull();
+      expect(el.querySelector('.proceso')?.textContent).toContain('Carros de POY');
+    });
+
+    it('el administrador sí puede elegir el tipo', async () => {
+      await crear(of(CARROS));
+      expect(el.querySelector('select[name="tipo"]')).toBeTruthy();
+      expect(el.querySelector('.proceso')).toBeNull();
     });
   });
 

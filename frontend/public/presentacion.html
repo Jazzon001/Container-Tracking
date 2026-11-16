@@ -81,12 +81,12 @@
 <section id="solucion">
   <h2>Solución</h2>
   <p>Container Tracking es un sistema web <strong>paralelo a NOW</strong>: no lo modifica ni depende de una conexión con él. Cada carro tiene siempre un estado conocido, y cada cambio de estado queda registrado con su fecha y hora.</p>
-  <p>Un carro pasa por tres estados: <strong>disponible</strong> (vacío y listo para que POY lo cargue), <strong>en tránsito</strong> (cargado, camino a su destino) y <strong>en mantenimiento</strong> (fuera de circulación mientras se repara). POY carga el carro escaneando su contenedor elemento; cuando el carro regresa vacío, almacén lo recibe y vuelve a estar disponible. Así POY consulta en tiempo real cuántos carros tiene, cuáles no han regresado y desde hace cuánto.</p>
+  <p>Un carro pasa por tres estados: <strong>disponible</strong> (vacío y listo para que POY lo cargue), <strong>en tránsito</strong> (cargado, camino a su destino) y <strong>en mantenimiento</strong> (fuera de circulación mientras se repara). el digitador carga el carro escaneando su contenedor elemento; cuando el carro regresa vacío, el intermedio o el empacador lo libera y vuelve a estar disponible. Así cada proceso consulta en tiempo real cuántos carros tiene, cuáles no han regresado y desde hace cuánto.</p>
 
   <figure>
     <svg viewBox="0 0 720 220" role="img" aria-labelledby="t1 d1" xmlns="http://www.w3.org/2000/svg">
       <title id="t1">Ciclo de vida de un carro</title>
-      <desc id="d1">Un carro disponible pasa a en tránsito cuando POY lo carga, regresa a disponible cuando almacén lo recibe, y puede pasar a mantenimiento y volver.</desc>
+      <desc id="d1">Un carro disponible pasa a en tránsito cuando POY lo carga, regresa a disponible cuando se libera, y puede pasar a mantenimiento y volver.</desc>
       <defs><marker id="p" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#57606f"/></marker></defs>
       <rect class="svg-caja" x="20" y="70" width="170" height="70" rx="10"/>
       <text class="svg-texto" x="105" y="102" text-anchor="middle" font-weight="700">Disponible</text>
@@ -98,9 +98,9 @@
       <text class="svg-texto" x="615" y="102" text-anchor="middle" font-weight="700">En mantenimiento</text>
       <text class="svg-suave" x="615" y="122" text-anchor="middle">fuera de circulación</text>
       <path class="svg-flecha" d="M190,92 L275,92" marker-end="url(#p)"/>
-      <text class="svg-suave" x="232" y="82" text-anchor="middle">POY carga</text>
+      <text class="svg-suave" x="232" y="82" text-anchor="middle">digitador carga</text>
       <path class="svg-flecha" d="M275,120 L190,120" marker-end="url(#p)"/>
-      <text class="svg-suave" x="232" y="140" text-anchor="middle">almacén recibe</text>
+      <text class="svg-suave" x="232" y="140" text-anchor="middle">se libera</text>
       <path class="svg-flecha" d="M105,70 C105,10 615,10 615,70" marker-end="url(#p)"/>
       <text class="svg-suave" x="360" y="32" text-anchor="middle">entra a mantenimiento</text>
       <path class="svg-flecha" d="M615,140 C615,205 105,205 105,140" marker-end="url(#p)"/>
@@ -114,11 +114,11 @@
   <h2>Funcionalidades</h2>
   <ul>
     <li><strong>Inventario en tiempo real.</strong> La pantalla Carros muestra todos los carros con su estado, cuántos hay de cada estado y desde hace cuánto están así. Se filtra tocando la tarjeta de un estado.</li>
-    <li><strong>Carga de carros (POY).</strong> Se registra qué carro se carga y su contenedor elemento. El cambio de estado es atómico: si dos personas intentan cargar el mismo carro a la vez, solo una lo logra y la otra recibe un aviso claro.</li>
-    <li><strong>Recepción (almacén).</strong> Se recibe el carro vacío escribiendo o escaneando su contenedor elemento, que es lo que lo identifica de forma única.</li>
-    <li><strong>Mantenimiento (POY y DTY).</strong> Se registra la fecha de entrada y de salida de mantenimiento de cada carro, y para esto basta el número del carro.</li>
+    <li><strong>Carga de carros (digitador).</strong> Se registra qué carro se carga y su contenedor elemento. El cambio de estado es atómico: si dos personas intentan cargar el mismo carro a la vez, solo una lo logra y la otra recibe un aviso claro.</li>
+    <li><strong>Liberación (intermedio y empacador).</strong> Se recibe el carro vacío escribiendo o escaneando su contenedor elemento, que es lo que lo identifica de forma única; el carro vuelve al stock disponible.</li>
+    <li><strong>Mantenimiento.</strong> Se registra la fecha de entrada y de salida de mantenimiento de cada carro, y para esto basta el número del carro.</li>
     <li><strong>Historial de cargas.</strong> Cada carga queda guardada con quién, cuándo y qué contenedor elemento, para responder por qué un carro tardó tanto.</li>
-    <li><strong>Roles.</strong> Cada usuario solo ve las acciones de su proceso: POY, almacén, DTY, Twisting o administrador.</li>
+    <li><strong>Perfiles por proceso.</strong> Cada persona ve solo los carros de su proceso (POY, DTY o Twisting) y solo las opciones de su puesto: el digitador carga y ve el menú completo; el intermedio y el empacador liberan carros y no ven la opción Cargar.</li>
     <li><strong>Instalable y con lectura sin conexión.</strong> Se instala en el celular como una aplicación y, sin señal, sigue mostrando lo último consultado. Registrar operaciones siempre exige conexión, para no duplicar movimientos.</li>
   </ul>
 </section>
@@ -182,21 +182,21 @@
     <li>En el celular, usa el menú del navegador y elige <strong>Instalar aplicación</strong> para tenerla como un ícono más.</li>
   </ol>
 
-  <h3>Cargar un carro (POY)</h3>
+  <h3>Cargar un carro (digitador)</h3>
   <ol>
     <li>Abre <strong>Cargar</strong>.</li>
     <li>Escribe el número del carro y escanea o escribe su contenedor elemento.</li>
     <li>Pulsa <strong>Cargar carro</strong>. El carro pasa a <em>en tránsito</em> y queda anotado en el historial.</li>
   </ol>
 
-  <h3>Recibir un carro vacío (almacén)</h3>
+  <h3>Liberar un carro vacío (intermedio o empacador)</h3>
   <ol>
     <li>Abre <strong>Recibir</strong>.</li>
     <li>Escribe o escanea el contenedor elemento del carro que llegó vacío.</li>
     <li>Pulsa <strong>Recibir carro</strong>. El carro vuelve a estar <em>disponible</em> para POY.</li>
   </ol>
 
-  <h3>Registrar mantenimiento (POY y DTY)</h3>
+  <h3>Registrar mantenimiento</h3>
   <ol>
     <li>Abre <strong>Mantenimiento</strong>, escribe el número del carro y pulsa <strong>Registrar entrada</strong>.</li>
     <li>Cuando la reparación termine, pulsa <strong>Dar salida</strong>: el carro vuelve a estar disponible.</li>
@@ -204,36 +204,51 @@
 
   <h3>Consultar el inventario y el historial (todos)</h3>
   <ol>
-    <li>En <strong>Carros</strong> toca la tarjeta de un estado para ver solo esos carros y desde cuándo están así.</li>
+    <li>En <strong>Carros</strong> toca la tarjeta de un estado para ver solo esos carros y desde cuándo están así. Solo aparecen los carros de tu proceso.</li>
     <li>En <strong>Historial</strong> busca por número de carro o por contenedor elemento para ver sus cargas anteriores.</li>
   </ol>
 
   <figure>
     <svg viewBox="0 0 720 230" role="img" aria-labelledby="t3 d3" xmlns="http://www.w3.org/2000/svg">
-      <title id="t3">Qué puede hacer cada rol</title>
-      <desc id="d3">Cuadro con las pantallas disponibles para cada rol: todos consultan carros e historial, POY carga, almacén recibe, y POY y DTY registran mantenimiento.</desc>
+      <title id="t3">Qué puede hacer cada perfil</title>
+      <desc id="d3">Cuadro con las pantallas de cada perfil: todos consultan carros e historial y liberan carros; solo los digitadores y el administrador cargan; todos registran mantenimiento.</desc>
       <rect class="svg-caja" x="10" y="10" width="700" height="210" rx="10"/>
-      <text class="svg-texto" x="30" y="42" font-weight="700">Rol</text>
-      <text class="svg-texto" x="190" y="42" font-weight="700" text-anchor="middle">Carros</text>
-      <text class="svg-texto" x="290" y="42" font-weight="700" text-anchor="middle">Historial</text>
-      <text class="svg-texto" x="400" y="42" font-weight="700" text-anchor="middle">Cargar</text>
-      <text class="svg-texto" x="500" y="42" font-weight="700" text-anchor="middle">Recibir</text>
-      <text class="svg-texto" x="620" y="42" font-weight="700" text-anchor="middle">Mantenimiento</text>
+      <text class="svg-texto" x="30" y="42" font-weight="700">Perfil</text>
+      <text class="svg-texto" x="340" y="42" font-weight="700" text-anchor="middle">Carros</text>
+      <text class="svg-texto" x="430" y="42" font-weight="700" text-anchor="middle">Historial</text>
+      <text class="svg-texto" x="510" y="42" font-weight="700" text-anchor="middle">Cargar</text>
+      <text class="svg-texto" x="590" y="42" font-weight="700" text-anchor="middle">Recibir</text>
+      <text class="svg-texto" x="690" y="42" font-weight="700" text-anchor="middle">Mantenimiento</text>
       <line x1="20" y1="54" x2="700" y2="54" stroke="#57606f"/>
-      <text class="svg-texto" x="30" y="84">POY</text>
-      <text class="svg-texto" x="30" y="114">Almacén</text>
-      <text class="svg-texto" x="30" y="144">DTY</text>
-      <text class="svg-texto" x="30" y="174">Twisting</text>
-      <text class="svg-texto" x="30" y="204">Administrador</text>
-      <g class="svg-texto" text-anchor="middle">
-        <text x="190" y="84">✓</text><text x="290" y="84">✓</text><text x="400" y="84">✓</text><text x="620" y="84">✓</text>
-        <text x="190" y="114">✓</text><text x="290" y="114">✓</text><text x="500" y="114">✓</text>
-        <text x="190" y="144">✓</text><text x="290" y="144">✓</text><text x="620" y="144">✓</text>
-        <text x="190" y="174">✓</text><text x="290" y="174">✓</text>
-        <text x="190" y="204">✓</text><text x="290" y="204">✓</text>
-      </g>
+      <text class="svg-texto" x="30" y="84">Digitador POY, DTY, Twisting</text>
+      <text class="svg-texto" x="340" y="84" text-anchor="middle">✓</text>
+      <text class="svg-texto" x="430" y="84" text-anchor="middle">✓</text>
+      <text class="svg-texto" x="510" y="84" text-anchor="middle">✓</text>
+      <text class="svg-texto" x="590" y="84" text-anchor="middle">✓</text>
+      <text class="svg-texto" x="690" y="84" text-anchor="middle">✓</text>
+      <text class="svg-texto" x="30" y="116">Intermedio / Empacador POY</text>
+      <text class="svg-texto" x="340" y="116" text-anchor="middle">✓</text>
+      <text class="svg-texto" x="430" y="116" text-anchor="middle">✓</text>
+      <text class="svg-texto" x="590" y="116" text-anchor="middle">✓</text>
+      <text class="svg-texto" x="690" y="116" text-anchor="middle">✓</text>
+      <text class="svg-texto" x="30" y="148">Empacador DTY y Twisting (DTY)</text>
+      <text class="svg-texto" x="340" y="148" text-anchor="middle">✓</text>
+      <text class="svg-texto" x="430" y="148" text-anchor="middle">✓</text>
+      <text class="svg-texto" x="590" y="148" text-anchor="middle">✓</text>
+      <text class="svg-texto" x="690" y="148" text-anchor="middle">✓</text>
+      <text class="svg-texto" x="30" y="180">Empacador Twisting</text>
+      <text class="svg-texto" x="340" y="180" text-anchor="middle">✓</text>
+      <text class="svg-texto" x="430" y="180" text-anchor="middle">✓</text>
+      <text class="svg-texto" x="590" y="180" text-anchor="middle">✓</text>
+      <text class="svg-texto" x="690" y="180" text-anchor="middle">✓</text>
+      <text class="svg-texto" x="30" y="212">Administrador</text>
+      <text class="svg-texto" x="340" y="212" text-anchor="middle">✓</text>
+      <text class="svg-texto" x="430" y="212" text-anchor="middle">✓</text>
+      <text class="svg-texto" x="510" y="212" text-anchor="middle">✓</text>
+      <text class="svg-texto" x="590" y="212" text-anchor="middle">✓</text>
+      <text class="svg-texto" x="690" y="212" text-anchor="middle">✓</text>
     </svg>
-    <figcaption>Figura 3. Pantallas disponibles según el rol de cada usuario.</figcaption>
+    <figcaption>Figura 3. Pantallas de cada perfil; cada uno ve solo los carros de su proceso.</figcaption>
   </figure>
 
   <p class="nota"><strong>Sin conexión:</strong> puedes consultar lo último que viste, pero no registrar cargas, recepciones ni mantenimiento. Al cerrar sesión se borran los datos guardados en el equipo.</p>
@@ -241,7 +256,7 @@
 
 <section id="cliente">
   <h2>Cliente</h2>
-  <p>El cliente es <strong>UTEXA</strong> (United Textile of America), fabricante de hilo de poliéster. Los usuarios directos son los operadores de POY, el personal de almacén y los equipos de DTY y Twisting. El beneficio para ellos es concreto: dejar de buscar carros de urgencia, tener a la vista cuáles faltan por regresar y poder demostrar con fechas cuánto tiempo retiene cada proceso a un carro.</p>
+  <p>El cliente es <strong>UTEXA</strong> (United Textile of America), fabricante de hilo de poliéster. Los usuarios directos son los digitadores, intermedios y empacadores de POY, DTY y Twisting. El beneficio para ellos es concreto: dejar de buscar carros de urgencia, tener a la vista cuáles faltan por regresar y poder demostrar con fechas cuánto tiempo retiene cada proceso a un carro.</p>
   <p>El sistema se pensó para convivir con lo que ya existe: NOW sigue siendo el sistema oficial de producción y Container Tracking agrega lo que NOW no muestra, sin cambiar los procesos de calidad ni de almacén.</p>
 </section>
 
