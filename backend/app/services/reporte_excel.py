@@ -131,7 +131,7 @@ NOTAS = (
     "Plantilla 016 = producción: deja el carro puesto en RCV01 (la entrada). Plantilla 202 = transferencia: cada fila es la SALIDA de esa ubicación.",
     "Una fila 202 en RCV01 = salió de recepción hacia un WIP. Una fila 202 en WIPxx = salió de ese WIP hacia DTY, donde se deja de rastrear.",
     "Un viaje es la vida de un contenedor elemento; un carro hace muchos viajes.",
-    "RCV02 recibe el producto POY de grado B que sale del proceso de DTY.",
+    "RCV02 es la última localización antes de que empaque libere el carro: ahí llegan los carros con producto POY de grado B que sale de DTY.",
     "Los carros se parten siempre en un lado A y un lado B (P056A y P056B): cada lado tiene su contenedor elemento y sus viajes.",
     "Calidad (Qlt de NOW): 1 = AA, 2 = A, 3 = B. Empaque la empaca como A o calidad la revisa y la deja como 3 (B), si aplica.",
     "Si de un contenedor no se ve su 016, se notificó antes del rango del archivo: no se calculan sus horas en RCV01.",

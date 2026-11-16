@@ -11,7 +11,6 @@ from app.services.reporte_tiempos import (
     agrupar_viajes,
     armar_reporte,
     cruzar_con_registros,
-    es_recepcion,
     es_tarima,
     es_wip,
     etiqueta_calidad,
@@ -155,26 +154,57 @@ class TestViajes:
         assert not v.salio_a_dty and not v.sigue_en_wip and not v.sigue_en_rcv
 
 
-class TestRecepcionDeGradoB:
-    """RCV02 recibe el producto POY de grado B que sale de DTY: es otra recepción, sin 016."""
+class TestRcv02:
+    """RCV02 es la última localización antes de que empaque libere el carro: ahí llegan los carros con
+    producto de grado B que sale de DTY."""
 
-    DATOS = [
-        mov(1, 8, "RCV02", "P5", "G1", calidad=3),
-        mov(1, 11, "WIPA4", "P5", "G1", calidad=3),
-        mov(1, 9, "RCV02", "P6", "G2", calidad=3),
+    # Viaje completo: entra a RCV01 a las 6, sale a las 8, sale del WIPA4 hacia DTY a las 12 y, de vuelta,
+    # sale de RCV02 el día 2 a las 7.
+    COMPLETO = [
+        entrada(1, 6, "P5", "G1", calidad=3),
+        mov(1, 8, "RCV01", "P5", "G1", calidad=3),
+        mov(1, 12, "WIPA4", "P5", "G1", calidad=3),
+        mov(2, 7, "RCV02", "P5", "G1", calidad=3),
     ]
+    # Solo se ve su salida de RCV02 (el resto fue antes del archivo).
+    SOLO_RCV02 = [mov(1, 9, "RCV02", "P6", "G2", calidad=3)]
 
-    def test_rcv02_cuenta_como_recepcion(self):
-        assert es_recepcion("RCV01") and es_recepcion("RCV02")
-        assert not es_recepcion("WIPA4") and es_wip("WIPA4")
+    def test_la_salida_de_rcv02_no_cambia_lo_que_se_mide_hasta_salir_hacia_dty(self):
+        v = viaje("G1", self.COMPLETO)
+        assert v.salio_a_dty and v.wip_de_salida == "WIPA4"
+        assert v.salio_a_dty_en == datetime(2026, 11, 1, 12)
+        assert v.horas_en_rcv == timedelta(hours=2)
+        assert v.horas_en_wip == timedelta(hours=4)
 
-    def test_mide_las_horas_en_wip_desde_rcv02_igual_que_desde_rcv01(self):
-        assert viaje("G1", self.DATOS).horas_en_wip == timedelta(hours=3)
+    def test_anota_cuando_salio_de_rcv02(self):
+        v = viaje("G1", self.COMPLETO)
+        assert v.paso_por_rcv02
+        assert v.salio_de_rcv02_en == datetime(2026, 11, 2, 7)
 
-    def test_si_se_queda_en_rcv02_lo_dice_con_su_significado(self):
-        v = viaje("G2", self.DATOS)
-        assert v.sigue_en_wip
-        assert "RCV02" in v.situacion and "grado B" in v.situacion
+    def test_el_recorrido_pone_dty_entre_el_ultimo_wip_y_rcv02(self):
+        assert viaje("G1", self.COMPLETO).recorrido == "RCV01 → WIPA4 → DTY → RCV02"
+
+    def test_la_situacion_dice_que_falta_que_empaque_lo_libere(self):
+        v = viaje("G1", self.COMPLETO)
+        assert v.situacion == "Salió de RCV02 (la última localización); falta que empaque libere el carro"
+
+    def test_solo_con_la_salida_de_rcv02_no_se_inventan_horas_en_rcv01_ni_en_wip(self):
+        v = viaje("G2", self.SOLO_RCV02)
+        assert v.paso_por_rcv02 and not v.salio_a_dty
+        assert v.horas_en_rcv is None and v.horas_en_wip is None
+        assert v.recorrido == "RCV02"
+        assert "RCV02" in v.situacion and "empaque" in v.situacion
+
+    def test_no_cuenta_como_si_siguiera_en_wip_ni_en_rcv01(self):
+        v = viaje("G2", self.SOLO_RCV02)
+        assert not v.sigue_en_wip and not v.sigue_en_rcv
+
+    def test_el_resumen_cuenta_los_viajes_que_pasaron_por_rcv02(self):
+        datos = dict(resumen(agrupar_viajes(self.COMPLETO + self.SOLO_RCV02)))
+        assert datos["Viajes que ya pasaron por RCV02 (falta que empaque libere el carro)"] == 2
+
+    def test_los_demas_viajes_no_pasaron_por_rcv02(self):
+        assert not viaje("A1").paso_por_rcv02
 
 
 class TestCalidad:

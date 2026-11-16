@@ -27,7 +27,7 @@ Escribe `datos/reporte_carros.xlsx`. El script no recibe rutas por argumentos: s
 | `016` en `RCV01` | **Entrada**: el ERP registra la producción y deja el carro puesto en `RCV01`. Se genera el contenedor elemento, el código de barras que se escanea en este sistema para registrar el carro como cargado. |
 | `202` en `RCV01` | **Salida** de recepción hacia un WIP (la hace el equipo de intermedio). |
 | `202` en `WIPxx` | **Salida** de ese WIP, siempre hacia **DTY**, donde se deja de rastrear el carro. |
-| `202` en `RCV02` | Salida de la recepción del producto POY de **grado B que sale del proceso de DTY** (no tiene `016`). |
+| `202` en `RCV02` | Salida de la **última localización antes de que empaque libere el carro**: ahí llegan los carros con producto POY de **grado B que sale del proceso de DTY**. No tiene `016`; el viaje ya había salido de su WIP hacia DTY. |
 
 La plantilla `202` es una **transferencia**: cada fila registra la salida del contenedor de la ubicación de la fila. Con las filas de un contenedor se reconstruye el recorrido y se miden tres tiempos:
 
@@ -52,9 +52,9 @@ Un **viaje** es la vida de un contenedor elemento. Un mismo carro hace muchos vi
 
 - Lo que sigue abierto (en `RCV01` o en WIP) se mide hasta el **último movimiento del archivo**, que es la fecha que dice el Resumen, y **no entra en los promedios**: no es una duración final.
 - Si de un contenedor no se ve su `016`, se notificó antes del rango del archivo: no se calculan sus horas en `RCV01`. Para tener más viajes completos, exporta desde una fecha anterior.
-- Un contenedor con varias filas `016` (NOW parte a veces la producción en varias líneas del mismo instante) cuenta desde la primera.
+- Un contenedor con varias filas `016` (el carro lleva más de un lote, y NOW registra la producción en varias líneas del mismo instante) cuenta como una sola entrada, desde la primera. Es normal, aunque no pasa todos los días.
 - "**En DTY**" significa que NOW registró su salida de WIP y que, hasta el corte, ese carro no ha vuelto a notificarse en `RCV01`. **No dice que siga en DTY**: puede haber regresado vacío y no haberse cargado todavía. El regreso no viene en el archivo.
-- Las **tarimas** (movimientos de un "carro" cuyo código empieza con `TAR`, como `TARPOY`) no son carros: se cuentan aparte en el Resumen. Son producto que se acomodó en tarima por falta de carro.
+- Las **tarimas** (movimientos de un "carro" cuyo código empieza con `TAR`, como `TARPOY`, confirmado) no son carros: se cuentan aparte en el Resumen. Son producto que se acomodó en tarima por falta de carro.
 - **Calidad (`Qlt` de NOW):** `1` es calidad **AA**, `2` es **A** y `3` es **B**. Empaque la empaca como A, o calidad la revisa y la deja como `3` (B), si aplica. La calidad no cambia dentro de un mismo contenedor elemento en el archivo probado.
 
 ## Qué falta

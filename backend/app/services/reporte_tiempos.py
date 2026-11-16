@@ -8,7 +8,8 @@ Cómo se lee el archivo (exportación de movimientos de stock):
     ubicación de la fila:
       * una fila 202 en `RCV01` es la salida de recepción hacia un WIP (lo mueve intermedio);
       * una fila 202 en `WIPxx` es la salida de ese WIP, siempre hacia DTY, donde se deja de rastrear.
-  - `RCV02` es la recepción del producto POY de grado B que sale del proceso de DTY.
+  - `RCV02` es la última localización antes de que empaque libere el carro: ahí llegan los carros con
+    producto POY de grado B que sale del proceso de DTY.
 
 Con las filas de un contenedor se reconstruye: RCV01 (entrada) → WIP (salida de RCV01) → DTY (salida del
 WIP). El archivo puede no traer la entrada (016) si fue anterior a su rango de fechas.
@@ -25,7 +26,8 @@ from dataclasses import dataclass, replace
 from datetime import datetime, timedelta
 from statistics import mean, median
 
-PREFIJO_RECEPCION = "RCV"
+RECEPCION = "RCV01"  # donde la producción (016) deja el carro
+ULTIMA_LOCALIZACION = "RCV02"  # la última antes de que empaque libere el carro; llega el producto de grado B que sale de DTY
 PREFIJO_WIP = "WIP"
 # Las tarimas (producto sin carro) vienen en el mismo archivo con un "carro" que empieza así.
 PREFIJO_TARIMA = "TAR"
@@ -70,6 +72,7 @@ class Viaje:
     notificado_en: datetime | None  # entrada a RCV01 (plantilla 016); None si fue antes del archivo
     salio_de_recepcion_en: datetime | None
     salio_a_dty_en: datetime | None
+    salio_de_rcv02_en: datetime | None  # salida de la última localización, antes de que empaque libere el carro
     wip_de_salida: str | None  # el WIP del que salió hacia DTY
     horas_en_rcv: timedelta | None  # de la notificación a salir de recepción (o hasta el corte, si sigue)
     horas_en_wip: timedelta | None  # de salir de recepción a salir hacia DTY (o hasta el corte, si sigue)
@@ -89,6 +92,10 @@ class Viaje:
     @property
     def salio_a_dty(self) -> bool:
         return self.salio_a_dty_en is not None
+
+    @property
+    def paso_por_rcv02(self) -> bool:
+        return self.salio_de_rcv02_en is not None
 
     @property
     def sigue_en_rcv(self) -> bool:
@@ -166,10 +173,6 @@ def etiqueta_calidad(calidad: int | None) -> str:
     return f"{calidad} ({CALIDADES[calidad]})" if calidad in CALIDADES else str(calidad)
 
 
-def es_recepcion(ubicacion: str) -> bool:
-    return ubicacion.startswith(PREFIJO_RECEPCION)
-
-
 def es_wip(ubicacion: str) -> bool:
     return ubicacion.startswith(PREFIJO_WIP)
 
@@ -199,22 +202,39 @@ def _situacion(salidas: list[Movimiento]) -> str:
     if not salidas:
         return "En RCV01 (notificado; esperando a que intermedio lo mueva)"
     ultima = salidas[-1]
+    if ultima.ubicacion == ULTIMA_LOCALIZACION:
+        return "Salió de RCV02 (la última localización); falta que empaque libere el carro"
     if es_wip(ultima.ubicacion):
         return f"En DTY (salió de {ultima.ubicacion})"
-    if ultima.ubicacion == "RCV01":
+    if ultima.ubicacion == RECEPCION:
         return "En WIP (salió de RCV01; aún no sale hacia DTY)"
-    if es_recepcion(ultima.ubicacion):
-        return f"Salió de {ultima.ubicacion} (grado B de DTY); aún no se ve su siguiente movimiento"
     return f"Salió de {ultima.ubicacion}"
+
+
+def _recorrido(lista: list[Movimiento], salio_a_dty: bool, en_wip: bool) -> str:
+    """Las ubicaciones por las que pasó, en orden. La salida del último WIP es hacia DTY."""
+    ultimo_wip = max((i for i, m in enumerate(lista) if es_wip(m.ubicacion)), default=None)
+    recorrido: list[str] = []
+    for i, m in enumerate(lista):
+        if not recorrido or recorrido[-1] != m.ubicacion:
+            recorrido.append(m.ubicacion)
+        if salio_a_dty and i == ultimo_wip:
+            recorrido.append("DTY")
+    if en_wip:
+        recorrido.append("(en WIP)")
+    return " → ".join(recorrido)
 
 
 def _viaje(lista: list[Movimiento], corte: datetime) -> Viaje:
     primero = lista[0]
     entrada = next((m for m in lista if m.es_entrada), None)
     salidas = [m for m in lista if not m.es_entrada]
-    de_recepcion = next((m for m in salidas if es_recepcion(m.ubicacion)), None)
-    salio_a_dty = bool(salidas) and es_wip(salidas[-1].ubicacion)
-    instante_dty = salidas[-1].instante if salio_a_dty else None
+    de_recepcion = next((m for m in salidas if m.ubicacion == RECEPCION), None)
+    de_wip = [m for m in salidas if es_wip(m.ubicacion)]
+    de_rcv02 = next((m for m in salidas if m.ubicacion == ULTIMA_LOCALIZACION), None)
+    # La salida del último WIP es hacia DTY. Después puede haber una salida de RCV02, cuando el carro
+    # vuelve de DTY con producto de grado B.
+    instante_dty = de_wip[-1].instante if de_wip else None
 
     horas_en_rcv = None
     if entrada is not None:
@@ -224,12 +244,6 @@ def _viaje(lista: list[Movimiento], corte: datetime) -> Viaje:
         horas_en_wip = (instante_dty or corte) - de_recepcion.instante
     horas_en_poy = instante_dty - entrada.instante if entrada is not None and instante_dty else None
 
-    recorrido = [m.ubicacion for i, m in enumerate(lista) if i == 0 or m.ubicacion != lista[i - 1].ubicacion]
-    if salio_a_dty:
-        recorrido.append("DTY")
-    elif de_recepcion is not None:
-        recorrido.append("(en WIP)")
-
     return Viaje(
         carro=primero.carro,
         contenedor=primero.contenedor,
@@ -238,11 +252,12 @@ def _viaje(lista: list[Movimiento], corte: datetime) -> Viaje:
         notificado_en=entrada.instante if entrada else None,
         salio_de_recepcion_en=de_recepcion.instante if de_recepcion else None,
         salio_a_dty_en=instante_dty,
-        wip_de_salida=salidas[-1].ubicacion if salio_a_dty else None,
+        salio_de_rcv02_en=de_rcv02.instante if de_rcv02 else None,
+        wip_de_salida=de_wip[-1].ubicacion if de_wip else None,
         horas_en_rcv=horas_en_rcv,
         horas_en_wip=horas_en_wip,
         horas_en_poy=horas_en_poy,
-        recorrido=" → ".join(recorrido),
+        recorrido=_recorrido(lista, salio_a_dty=bool(de_wip), en_wip=de_recepcion is not None and not de_wip and de_rcv02 is None),
         ultimo_movimiento=lista[-1].instante,
         desde_ultimo_movimiento=corte - lista[-1].instante,
         situacion=_situacion(salidas),
@@ -374,6 +389,7 @@ def resumen(viajes: list[Viaje], tarimas: int = 0) -> list[tuple[str, object]]:
         ("Viajes que siguen en RCV01 (notificados, sin moverse)", len(en_rcv)),
         ("Viajes que siguen en WIP (aún no salen hacia DTY)", len(en_wip)),
         ("Viajes que ya salieron hacia DTY", sum(1 for v in viajes if v.salio_a_dty)),
+        ("Viajes que ya pasaron por RCV02 (falta que empaque libere el carro)", sum(1 for v in viajes if v.paso_por_rcv02)),
     ]
     if en_rcv:
         mas_antiguo = max(en_rcv, key=lambda v: v.horas_en_rcv)
