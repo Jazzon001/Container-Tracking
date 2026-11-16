@@ -50,7 +50,8 @@ flowchart TB
     rusu["routers/usuarios.py"]
     rc["routers/carros.py"]
     rm["routers/mantenimiento.py"]
-    dep["dependencias.py<br/>sesión iniciada y rol requerido"]
+    dep["dependencias.py<br/>sesión iniciada, permiso y alcance"]
+    perm["permisos.py<br/>qué puede hacer cada perfil"]
     seg["seguridad.py<br/>hash de contraseñas y JWT"]
     su["services/usuarios.py"]
     sc["services/carros.py<br/>reglas de carros y transiciones"]
@@ -70,6 +71,7 @@ flowchart TB
     rc --> dep
     rm --> dep
     dep --> seg
+    dep --> perm
     dep --> su
     su --> mod
     sc --> mod
@@ -97,6 +99,7 @@ Los routers solo manejan HTTP. Las reglas de negocio están en los servicios, qu
 - [ADR 0005: Historial de cargas como tabla propia](adr/0005-historial-de-cargas.md)
 - [ADR 0006: PWA, uso sin conexión y endurecimiento del sitio publicado](adr/0006-pwa-y-endurecimiento-del-sitio.md)
 - [ADR 0007: La API como única puerta a los datos, con seguridad por filas](adr/0007-acceso-a-datos-y-rls.md)
+- [ADR 0008: Perfiles por proceso y alcance de los carros](adr/0008-perfiles-por-proceso.md)
 
 La guía paso a paso para publicar el sistema está en [DESPLIEGUE.md](DESPLIEGUE.md).
 

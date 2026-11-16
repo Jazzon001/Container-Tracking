@@ -12,7 +12,7 @@ El sistema tiene cinco tipos de usuario (POY, Almacén, DTY, Twisting y Administ
 1. **Inicio de sesión con usuario y contraseña** (`POST /auth/login`) que devuelve un **token JWT** (HS256) válido por 8 horas, una jornada de trabajo. El cliente lo envía en el encabezado `Authorization: Bearer <token>`.
 2. **La clave de firma** se lee de la variable de entorno `JWT_SECRET`. Nunca se escribe en el código ni en el repositorio. Sin ella, la aplicación falla con un mensaje claro en lugar de usar una clave por defecto.
 3. **Contraseñas** guardadas solo como hash PBKDF2-SHA256 con sal aleatoria (600 000 iteraciones), con la biblioteca estándar de Python. No se almacena ni se devuelve la contraseña.
-4. **Roles fijos** (`Rol`). La autorización se declara en cada ruta con `requiere_roles(...)`; el administrador siempre tiene permiso.
+4. **Roles fijos** (`Rol`). La autorización se declara en cada ruta; el administrador siempre tiene permiso. *(Ampliado por el [ADR 0008](0008-perfiles-por-proceso.md): ahora hay perfiles por proceso y las operaciones sobre carros se autorizan con permisos y alcance; `requiere_roles` solo queda para las operaciones del administrador.)*
 5. **El rol se lee de la base de datos** en cada petición, no del token. Si se cambia el rol de un usuario, el cambio aplica de inmediato.
 6. **Primer administrador** mediante un script (`python -m scripts.crear_usuario`) que pide la contraseña por teclado, porque la API exige ser administrador para crear usuarios.
 7. **401 contra 403:** 401 si no hay sesión o el token no es válido; 403 si hay sesión pero el rol no permite la operación.

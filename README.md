@@ -56,7 +56,7 @@ Un sistema **paralelo a NOW**, que no modifica los procesos de calidad ni de alm
 
 - **Captura de códigos** con lector de código de barras **y** escritura manual en el mismo campo.
 - **Responsive**: debe poder usarse desde el celular.
-- **Roles**: POY, Almacén, DTY, Twisting y Administrador, con permisos por rol.
+- **Perfiles por proceso**: digitador, intermedio y empacador de POY; digitador y empacador de DTY y de Twisting; el perfil Twisting (libera carros de DTY) y el administrador. Cada perfil ve solo los carros de su proceso.
 - **Concurrencia**: al menos 4 usuarios simultáneos, con validaciones para que un carro no se asigne dos veces a la vez.
 
 ## Stack tecnológico
@@ -104,8 +104,8 @@ Backend (FastAPI + SQLAlchemy) y frontend (Angular) en desarrollo.
 | `POST /carros` | Registra un carro (número y tipo: `poy`, `dty` o `twisting`) |
 | `GET /carros` | Lista carros; filtros opcionales `?estado=`, `?numero=`, `?tipo=` y `?contenedor_elemento=` |
 | `GET /carros/{id}` | Consulta un carro |
-| `POST /carros/{id}/carga` | POY carga un carro con su contenedor elemento |
-| `POST /carros/{id}/entrega` | Almacén recibe el carro vacío |
+| `POST /carros/{id}/carga` | El digitador carga un carro con su contenedor elemento (sale del stock disponible) |
+| `POST /carros/{id}/entrega` | Se libera el carro: vuelve al stock disponible (pantalla *Recibir*) |
 | `GET /cargas` | Historial de viajes (carro, contenedor elemento, cargada y recibida); filtros `?numero=` y `?contenedor_elemento=`, y `?limite=` |
 | `POST /carros/{id}/mantenimiento` | Un carro disponible entra a mantenimiento |
 | `POST /carros/{id}/mantenimiento/salida` | El carro sale de mantenimiento |
@@ -117,17 +117,21 @@ Con el servidor en marcha, la documentación interactiva está en `/docs`.
 
 Los carros se importan del Excel que se descarga de NOW (hoja `Containers`; el tipo de producto `C01`, `C02` y `C03` corresponde a carros de POY, DTY y Twisting). Desde `backend`: `python -m scripts.importar_carros <archivo.xlsx>` revisa sin guardar y, con `--guardar`, agrega los carros nuevos como disponibles; repetirlo no duplica. Los archivos con datos reales van en `datos/`, que no se sube a GitHub.
 
-### Permisos por rol
+### Perfiles y permisos
 
-Todas las rutas, salvo `/health` y `/auth/login`, exigen iniciar sesión. El administrador puede realizar cualquier operación.
+Todas las rutas, salvo `/health` y `/auth/login`, exigen iniciar sesión. Cada perfil pertenece a un **proceso** y **solo ve y toca los carros de ese proceso** (el administrador ve todos). Pedir un carro de otro proceso responde 404.
 
-| Operación | Roles permitidos (además del administrador) |
-|---|---|
-| Consultar carros y su historial de mantenimiento | Todos |
-| Registrar un carro, crear usuarios | Solo administrador |
-| Cargar un carro | POY |
-| Recibir un carro vacío (entrega) | Almacén |
-| Registrar entrada y salida de mantenimiento | POY y DTY |
+| Perfil | Carros de | Cargar | Liberar (*Recibir*) | Mantenimiento |
+|---|---|---|---|---|
+| Digitador POY | POY | sí | sí | sí |
+| Intermedio POY, Empacador POY | POY | no | sí | sí |
+| Digitador DTY | DTY | sí | sí | sí |
+| Empacador DTY, Twisting | DTY | no | sí | sí |
+| Digitador Twisting | Twisting | sí | sí | sí |
+| Empacador Twisting | Twisting | no | sí | sí |
+| Administrador | todos | sí | sí | sí |
+
+Registrar carros y crear usuarios es solo del administrador. Los perfiles anteriores (`poy`, `dty`, `almacen`) se conservan para no romper a los usuarios ya creados. Los valores para crear un usuario (`digitador_poy`, `intermedio_poy`, `empacador_poy`, `digitador_dty`, `empacador_dty`, `twisting`, `digitador_twt`, `empacador_twt`) y la decisión completa están en el [ADR 0008](docs/adr/0008-perfiles-por-proceso.md).
 
 ### Documentación
 

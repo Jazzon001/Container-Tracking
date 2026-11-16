@@ -82,7 +82,7 @@ El navegador solo deja que tu página llame a la API si la API lo permite (CORS)
 - [ ] La página de Vercel abre el inicio de sesión.
 - [ ] Puedes entrar con tu administrador y ves los 1566 carros.
 - [ ] Desde el celular, la página se ve bien y funciona.
-- [ ] Creas un usuario de POY y uno de Almacén (`POST /usuarios` en `.../docs`, con tu administrador) y pruebas cargar y recibir un carro.
+- [ ] Creas un digitador de POY y un intermedio de POY (`POST /usuarios` en `.../docs`, con tu administrador; perfiles en el ADR 0008) y pruebas cargar con el primero y liberar con el segundo. La migración 0004 (perfiles) se aplica sola al arrancar la API.
 - [ ] En la pestaña **Actions** de GitHub, el CI sigue en verde.
 
 ## Problemas frecuentes
