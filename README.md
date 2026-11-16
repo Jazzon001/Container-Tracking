@@ -137,6 +137,7 @@ Registrar carros y crear usuarios es solo del administrador. Los perfiles anteri
 
 - [Guía de pruebas y flujo de trabajo](docs/GUIA-PRUEBAS.md): cómo instalar, ejecutar y probar.
 - [Guía de despliegue](docs/DESPLIEGUE.md): cómo publicar el sistema en Supabase, Render y Vercel.
+- [Reporte de qué ha pasado con cada carro](docs/REPORTE-CARROS.md): tabla de tiempos a partir de la exportación de movimientos de NOW.
 - [Calidad de código](docs/CALIDAD.md): cobertura de pruebas (≥ 80 % exigido en el CI) y análisis con SonarCloud.
 - [Arquitectura (C4)](docs/arquitectura.md) y [decisiones (ADR)](docs/adr/).
 - [Modelo de datos en JSON](docs/modelo-de-datos.json), generado con `python -m scripts.exportar_modelo` desde `backend/`.
