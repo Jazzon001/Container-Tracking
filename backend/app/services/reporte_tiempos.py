@@ -126,8 +126,10 @@ class FilaCarro:
     desde_ultimo_movimiento: timedelta
     horas_promedio_en_rcv: timedelta | None
     horas_promedio_en_wip: timedelta | None
+    # Lo del sistema sale del último viaje del carro que SÍ tiene registro aquí, que no siempre es el último de NOW.
     situacion_sistema: str
-    horas_en_dty: timedelta | None  # del último viaje
+    viajes_en_sistema: int  # cuántos de sus viajes tienen registro en este sistema
+    horas_en_dty: timedelta | None
     dty_abierto: bool
     horas_promedio_en_dty: timedelta | None  # de los viajes ya liberados
 
@@ -339,6 +341,8 @@ def por_carro(viajes: list[Viaje]) -> list[FilaCarro]:
     # Un lado junto al otro: P056A, P056B, P057A, ...
     for carro, lista in sorted(_viajes_de_cada_carro(viajes).items(), key=lambda par: separar_lado(par[0])):
         ultimo = max(lista, key=lambda v: v.ultimo_movimiento)
+        registrados = [v for v in lista if v.en_sistema]
+        ultimo_registrado = max(registrados, key=lambda v: v.ultimo_movimiento) if registrados else ultimo
         filas.append(
             FilaCarro(
                 carro=carro,
@@ -349,9 +353,10 @@ def por_carro(viajes: list[Viaje]) -> list[FilaCarro]:
                 desde_ultimo_movimiento=ultimo.desde_ultimo_movimiento,
                 horas_promedio_en_rcv=_promedio([v.horas_en_rcv for v in lista if v.horas_en_rcv is not None and not v.sigue_en_rcv]),
                 horas_promedio_en_wip=_promedio([v.horas_en_wip for v in lista if v.salio_a_dty and v.horas_en_wip is not None]),
-                situacion_sistema=ultimo.situacion_sistema,
-                horas_en_dty=ultimo.horas_en_dty,
-                dty_abierto=ultimo.dty_abierto,
+                situacion_sistema=ultimo_registrado.situacion_sistema,
+                viajes_en_sistema=len(registrados),
+                horas_en_dty=ultimo_registrado.horas_en_dty,
+                dty_abierto=ultimo_registrado.dty_abierto,
                 horas_promedio_en_dty=_promedio([v.horas_en_dty for v in _liberados(lista)]),
             )
         )

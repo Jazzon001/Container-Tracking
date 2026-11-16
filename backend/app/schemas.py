@@ -92,6 +92,7 @@ class FilaCarroOut(BaseModel):
     horas_promedio_en_rcv: float | None
     horas_promedio_en_wip: float | None
     situacion_sistema: str
+    viajes_en_sistema: int
     horas_en_dty: float | None
     dty_abierto: bool
     horas_promedio_en_dty: float | None

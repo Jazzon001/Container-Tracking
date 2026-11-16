@@ -2,7 +2,7 @@
 from io import BytesIO
 
 import pytest
-from excel_de_now import FILAS_BASICAS, excel
+from excel_de_now import FILAS_BASICAS, excel, fila
 from openpyxl import load_workbook
 
 from app.models import Rol
@@ -71,6 +71,16 @@ class TestReporte:
 
         fila = next(c for c in subir(client).json()["carros"] if c["carro"] == "P1A")
         assert fila["situacion_sistema"] == "Liberado en el sistema"
+
+    def test_un_carro_con_un_viaje_viejo_registrado_no_aparece_sin_registro(self, client, crear_carro, cargar):
+        # P1A hace dos viajes en NOW (A1 y A2); solo A1 se cargó en el sistema.
+        filas = FILAS_BASICAS + [fila(2, 6, "RCV01", "P1A", "A2", plantilla="016"), fila(2, 8, "RCV01", "P1A", "A2")]
+        carro = crear_carro("P1A")
+        cargar(carro["id"], "A1")
+
+        carros = {c["carro"]: c for c in subir(client, contenido=excel(filas)).json()["carros"]}
+        assert carros["P1A"]["situacion_sistema"] == "Cargado en el sistema, sin liberar"
+        assert carros["P1A"]["viajes_en_sistema"] == 1 and carros["P1A"]["viajes"] == 2
 
     def test_no_guarda_el_archivo_ni_cambia_los_carros(self, client, crear_carro):
         crear_carro("P1A")

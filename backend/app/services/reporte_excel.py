@@ -177,13 +177,13 @@ def escribir_excel(reporte: Reporte) -> bytes:
         "Por carro",
         ["Carro físico", "Lado", "Carro (NOW)", "Viajes", "Último contenedor elemento", "Calidad (Qlt)",
          "Situación (NOW)", "Horas en esa situación", "Horas promedio en RCV01", "Horas promedio en WIP",
-         "En este sistema", "Horas en DTY (último viaje)", "Horas promedio en DTY"],
+         "En este sistema (último viaje registrado)", "Viajes registrados en el sistema", "Horas en DTY (ese viaje)", "Horas promedio en DTY"],
         [[c.carro_fisico, c.lado, c.carro, c.viajes, c.ultimo_contenedor, etiqueta_calidad(c.calidad),
           c.situacion, horas(c.desde_ultimo_movimiento), horas(c.horas_promedio_en_rcv),
-          horas(c.horas_promedio_en_wip), c.situacion_sistema, horas(c.horas_en_dty),
-          horas(c.horas_promedio_en_dty)]
+          horas(c.horas_promedio_en_wip), c.situacion_sistema, f"{c.viajes_en_sistema} de {c.viajes}",
+          horas(c.horas_en_dty), horas(c.horas_promedio_en_dty)]
          for c in reporte.carros],
-        [12, 6, 12, 8, 24, 12, 58, 14, 14, 14, 34, 14, 14],
+        [12, 6, 12, 8, 24, 12, 58, 14, 14, 14, 34, 16, 14, 14],
     )
 
     hoja_viajes = _hoja(

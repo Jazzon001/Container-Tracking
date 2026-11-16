@@ -429,6 +429,22 @@ class TestCruceConElSistema:
         assert p1.horas_promedio_en_dty == timedelta(hours=8)  # solo cuenta A1, que ya se liberó
         assert filas["P3"].situacion_sistema == "Sin registro en este sistema"
 
+    def test_si_el_ultimo_viaje_no_tiene_registro_se_usa_el_ultimo_que_si_lo_tiene(self):
+        # P1 hizo A1 (con registro, liberado) y D4 (sin registro): la fila del carro no debe decir "sin registro".
+        registros = {"A1": self.registros()["A1"]}
+        viajes = cruzar_con_registros(agrupar_viajes(MOVIMIENTOS, CORTE), registros, self.DESPLAZAMIENTO, CORTE)
+        p1 = next(f for f in por_carro(viajes) if f.carro == "P1")
+        assert p1.ultimo_contenedor == "D4"  # el último de NOW sigue siendo D4
+        assert p1.situacion_sistema == "Liberado en el sistema"
+        assert p1.viajes_en_sistema == 1 and p1.viajes == 2
+        assert p1.horas_en_dty == timedelta(hours=8) and not p1.dty_abierto
+
+    def test_cuenta_los_viajes_registrados_de_cada_carro(self):
+        filas = {f.carro: f for f in por_carro(list(self.cruzados().values()))}
+        assert filas["P1"].viajes_en_sistema == 2  # A1 y D4
+        assert filas["P2"].viajes_en_sistema == 1
+        assert filas["P3"].viajes_en_sistema == 0
+
     def test_el_resumen_trae_lo_del_cruce(self):
         datos = dict(resumen(list(self.cruzados().values())))
         assert datos["Viajes registrados en este sistema"] == "3 de 6"

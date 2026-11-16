@@ -31,6 +31,8 @@ export interface FilaCarroReporte {
   horas_promedio_en_rcv: number | null;
   horas_promedio_en_wip: number | null;
   situacion_sistema: string;
+  /** Cuántos de sus viajes tienen registro en este sistema. */
+  viajes_en_sistema: number;
   horas_en_dty: number | null;
   /** Salió hacia DTY, se cargó en este sistema y todavía no se libera: las horas siguen corriendo. */
   dty_abierto: boolean;

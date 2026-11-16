@@ -18,6 +18,7 @@ const carro = (datos: Partial<FilaCarroReporte>): FilaCarroReporte => ({
   horas_promedio_en_rcv: 2,
   horas_promedio_en_wip: 4,
   situacion_sistema: 'Liberado en el sistema',
+  viajes_en_sistema: 1,
   horas_en_dty: 8,
   dty_abierto: false,
   horas_promedio_en_dty: 8,
@@ -36,8 +37,8 @@ const REPORTE: ReporteCarros = {
   ],
   carros: [
     carro({}),
-    carro({ lado: 'B', carro: 'P056B', horas_en_dty: 9.1, dty_abierto: true, situacion_sistema: 'Cargado en el sistema, sin liberar' }),
-    carro({ carro_fisico: 'P057', carro: 'P057A', horas_en_situacion: null, horas_en_dty: null, situacion_sistema: 'Sin registro en este sistema' }),
+    carro({ lado: 'B', carro: 'P056B', horas_en_dty: 9.1, dty_abierto: true, situacion_sistema: 'Cargado en el sistema, sin liberar', viajes_en_sistema: 1 }),
+    carro({ carro_fisico: 'P057', carro: 'P057A', horas_en_situacion: null, horas_en_dty: null, situacion_sistema: 'Sin registro en este sistema', viajes_en_sistema: 0 }),
   ],
 };
 
@@ -135,9 +136,11 @@ describe('ReporteComponent', () => {
     expect(primera).toContain('P056A');
     expect(primera).toContain('En DTY (salió de WIPB4)');
     expect(primera).toContain('Liberado en el sistema');
+    expect(primera).toContain('(1 de 2 viajes)');
     expect(primera).toContain('8 h');
     expect(segunda).toContain('9.1 h (sin liberar)');
     expect(tercera).toContain('Sin registro en este sistema');
+    expect(tercera).not.toContain('viajes)');
     expect(tercera).toContain('—');
   });
 

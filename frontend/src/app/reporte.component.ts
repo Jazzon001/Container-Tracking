@@ -69,7 +69,7 @@ import { ReporteService } from './reporte.service';
       }
 
       <h2>Por carro</h2>
-      <p class="ayuda">Cada carro se parte en un lado A y un lado B. Las horas en DTY van de la salida del WIP a la liberación del carro.</p>
+      <p class="ayuda">Cada carro se parte en un lado A y un lado B. "En este sistema" es el último viaje del carro que sí tiene registro aquí, y las horas en DTY van de la salida del WIP a la liberación del carro en ese viaje.</p>
       <label>
         Buscar carro
         <input type="search" name="buscar" autocomplete="off" autocapitalize="characters" #caja [value]="busqueda()" (input)="busqueda.set(caja.value)" />
@@ -90,7 +90,10 @@ import { ReporteService } from './reporte.service';
                 <td>{{ carro.calidad }}</td>
                 <td>{{ carro.situacion }}</td>
                 <td>{{ horas(carro.horas_en_situacion) }}</td>
-                <td>{{ carro.situacion_sistema }}</td>
+                <td>
+                  {{ carro.situacion_sistema }}
+                  @if (carro.viajes_en_sistema) { <small class="ayuda">({{ carro.viajes_en_sistema }} de {{ carro.viajes }} viajes)</small> }
+                </td>
                 <td>{{ horasEnDty(carro) }}</td>
               </tr>
             } @empty {

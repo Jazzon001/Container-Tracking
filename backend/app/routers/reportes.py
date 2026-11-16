@@ -71,6 +71,7 @@ def _a_salida(reporte: Reporte) -> ReporteOut:
                 horas_promedio_en_rcv=horas(c.horas_promedio_en_rcv),
                 horas_promedio_en_wip=horas(c.horas_promedio_en_wip),
                 situacion_sistema=c.situacion_sistema,
+                viajes_en_sistema=c.viajes_en_sistema,
                 horas_en_dty=horas(c.horas_en_dty),
                 dty_abierto=c.dty_abierto,
                 horas_promedio_en_dty=horas(c.horas_promedio_en_dty),
