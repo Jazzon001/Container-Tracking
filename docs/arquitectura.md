@@ -100,6 +100,7 @@ Los routers solo manejan HTTP. Las reglas de negocio están en los servicios, qu
 - [ADR 0006: PWA, uso sin conexión y endurecimiento del sitio publicado](adr/0006-pwa-y-endurecimiento-del-sitio.md)
 - [ADR 0007: La API como única puerta a los datos, con seguridad por filas](adr/0007-acceso-a-datos-y-rls.md)
 - [ADR 0008: Perfiles por proceso y alcance de los carros](adr/0008-perfiles-por-proceso.md)
+- [ADR 0009: Módulo de análisis: el Excel de NOW cruzado con las cargas del sistema](adr/0009-modulo-de-analisis.md)
 
 La guía paso a paso para publicar el sistema está en [DESPLIEGUE.md](DESPLIEGUE.md).
 

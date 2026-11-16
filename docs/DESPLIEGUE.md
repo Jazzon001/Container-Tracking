@@ -39,6 +39,7 @@ No hace falta crear tablas: la API las crea sola al arrancar (migraciones).
 2. Te pide dos valores:
    - `DATABASE_URL`: pega la cadena del paso 1 (ya con la contraseña).
    - `CORS_ORIGINS`: por ahora escribe `http://localhost:4200`. Lo cambiarás en el paso 4.
+   - `NOW_UTC_OFFSET_HORAS` (opcional): la diferencia de la hora de la planta con UTC. Si no la defines vale `-6` (México central y Honduras, sin horario de verano). Solo la usa el reporte de tiempos (ADR 0009) para cruzar la hora de NOW con la del sistema; si la planta está en otra zona, defínela aquí.
 3. Pulsa **Apply** y espera a que el despliegue termine (unos minutos la primera vez).
 4. Anota la dirección pública del servicio: `https://container-tracking-api.onrender.com` (o la que te asigne). Comprueba que abre `.../health` y muestra `{"status":"ok"}`.
 

@@ -110,6 +110,8 @@ Backend (FastAPI + SQLAlchemy) y frontend (Angular) en desarrollo.
 | `POST /carros/{id}/mantenimiento` | Un carro disponible entra a mantenimiento |
 | `POST /carros/{id}/mantenimiento/salida` | El carro sale de mantenimiento |
 | `GET /carros/{id}/mantenimiento` | Historial de mantenimiento del carro |
+| `POST /reportes/carros` | Reporte de tiempos a partir del Excel de NOW (cuerpo de la petición); solo administrador |
+| `POST /reportes/carros/excel` | Lo mismo, como archivo Excel para descargar; solo administrador |
 
 Con el servidor en marcha, la documentación interactiva está en `/docs`.
 
@@ -131,13 +133,13 @@ Todas las rutas, salvo `/health` y `/auth/login`, exigen iniciar sesión. Cada p
 | Empacador Twisting | Twisting | no | sí | sí |
 | Administrador | todos | sí | sí | sí |
 
-Registrar carros y crear usuarios es solo del administrador. Los perfiles anteriores (`poy`, `dty`, `almacen`) se conservan para no romper a los usuarios ya creados. Los valores para crear un usuario (`digitador_poy`, `intermedio_poy`, `empacador_poy`, `digitador_dty`, `empacador_dty`, `twisting`, `digitador_twt`, `empacador_twt`) y la decisión completa están en el [ADR 0008](docs/adr/0008-perfiles-por-proceso.md).
+Registrar carros, crear usuarios y generar el reporte de tiempos es solo del administrador. Los perfiles anteriores (`poy`, `dty`, `almacen`) se conservan para no romper a los usuarios ya creados. Los valores para crear un usuario (`digitador_poy`, `intermedio_poy`, `empacador_poy`, `digitador_dty`, `empacador_dty`, `twisting`, `digitador_twt`, `empacador_twt`) y la decisión completa están en el [ADR 0008](docs/adr/0008-perfiles-por-proceso.md).
 
 ### Documentación
 
 - [Guía de pruebas y flujo de trabajo](docs/GUIA-PRUEBAS.md): cómo instalar, ejecutar y probar.
 - [Guía de despliegue](docs/DESPLIEGUE.md): cómo publicar el sistema en Supabase, Render y Vercel.
-- [Reporte de qué ha pasado con cada carro](docs/REPORTE-CARROS.md): tabla de tiempos a partir de la exportación de movimientos de NOW.
+- [Reporte de qué ha pasado con cada carro](docs/REPORTE-CARROS.md): el Excel de movimientos de NOW cruzado con las cargas del sistema (pantalla *Reporte*, solo administrador).
 - [Calidad de código](docs/CALIDAD.md): cobertura de pruebas (≥ 80 % exigido en el CI) y análisis con SonarCloud.
 - [Arquitectura (C4)](docs/arquitectura.md) y [decisiones (ADR)](docs/adr/).
 - [Modelo de datos en JSON](docs/modelo-de-datos.json), generado con `python -m scripts.exportar_modelo` desde `backend/`.

@@ -4,6 +4,12 @@ Convierte la exportación de movimientos de stock de NOW en una tabla que muestr
 
 ## Cómo generarlo
 
+### En la aplicación (administrador)
+
+Entra a **Reporte**, elige el Excel de NOW y pulsa **Generar reporte**. Verás el resumen, las tablas por WIP y calidad, y una tabla por carro con búsqueda; **Descargar Excel** baja el mismo reporte. Esta forma **cruza con las cargas del sistema** (horas en DTY y horas hasta escanear). El archivo no se guarda. Detalles y decisiones en el [ADR 0009](adr/0009-modulo-de-analisis.md).
+
+### Con el script, sin la aplicación
+
 1. En NOW, exporta los movimientos de stock a Excel (la consulta *Stock transaction Inquiry*) con **las plantillas `016` y `202`**, tipo de artículo `PPY` y el almacén lógico `WH103`. Debe traer las columnas `Transaction date`, `Transaction time`, `Location`, `Cnr` (el carro), `Container element` y `Tmp` (la plantilla); la calidad (`Qlt`) es opcional.
 2. Copia el archivo a `datos/movimientos_now.xlsx`. La carpeta `datos/` no se sube a GitHub.
 3. Desde `backend`, con el entorno virtual activo:
@@ -12,7 +18,7 @@ Convierte la exportación de movimientos de stock de NOW en una tabla que muestr
 python -m scripts.reporte_carros
 ```
 
-Escribe `datos/reporte_carros.xlsx`. El script no recibe rutas por argumentos: siempre lee y escribe en esos lugares. Sin la columna `Tmp`, todo se trata como `202` y no se pueden medir las horas en `RCV01`.
+Escribe `datos/reporte_carros.xlsx`. El script no recibe rutas por argumentos: siempre lee y escribe en esos lugares, y **no cruza con las cargas del sistema** (para eso, la pantalla Reporte). Sin la columna `Tmp`, todo se trata como `202` y no se pueden medir las horas en `RCV01`.
 
 ## Cómo se lee el archivo de NOW
 
@@ -53,9 +59,16 @@ Un **viaje** es la vida de un contenedor elemento. Un mismo carro hace muchos vi
 
 ## Qué falta
 
-- **Cuánto tiempo está el carro en DTY.** No se mide con NOW a propósito: el dato correcto es el tiempo entre su salida hacia DTY y el momento en que `intermedio_poy` o `empacador_poy` lo libera en este sistema con el contenedor elemento. Mientras tanto, "En DTY" solo dice que NOW registró la salida.
-- **Cruzar con las cargas de este sistema** (`cargada_en` y `recibida_en`) por carro y contenedor elemento: el momento en que se escanea el carro frente a la notificación en NOW (`016`), y el momento en que intermedio o empacador lo libera frente a la salida hacia DTY. Con eso se vería cuánto tarda DTY en devolverlo en la práctica.
-- **Una pantalla para subir el Excel**, restringida al administrador. Hoy es un script.
+- **Más viajes registrados en el sistema.** El cruce ya está hecho, pero depende de que se escanee cada contenedor elemento al cargar y de que intermedio o empaque libere el carro con él. Un viaje sin registro no tiene horas en DTY.
+- **La zona horaria.** El cruce supone que la planta está en UTC-6 todo el año. Si no es así, hay que cambiar `NOW_UTC_OFFSET_HORAS` en Render.
+
+## Cómo se cruza con este sistema
+
+Por contenedor elemento, con la tabla `cargas` (el código que escaneó el digitador y la liberación que registró intermedio o empaque):
+
+- **Horas hasta escanear:** de la notificación (`016`) a que se escaneó el contenedor elemento al cargar el carro.
+- **Horas en DTY:** de la salida del WIP en NOW a la **liberación** en este sistema. Si el carro se cargó en el sistema pero todavía no se libera, las horas corren hasta el último movimiento del archivo y se marcan "sin liberar" (no entran en los promedios).
+- Si la liberación fuera anterior a la salida del WIP, o el escaneo anterior a la `016`, no se mide (sería un dato incoherente).
 
 ## Principios aplicados
 
