@@ -16,6 +16,7 @@ import { ConexionService } from './conexion.service';
           @if (auth.puede('liberar')) { <a routerLink="/entrega" routerLinkActive="activa">Recibir</a> }
           @if (auth.puede('mantener')) { <a routerLink="/mantenimiento" routerLinkActive="activa">Mantenimiento</a> }
           <a routerLink="/historial" routerLinkActive="activa">Historial</a>
+          @if (auth.puede('reportes')) { <a routerLink="/reporte" routerLinkActive="activa">Reporte</a> }
         </nav>
         <button type="button" class="secundario" (click)="salir()">Salir</button>
       </header>

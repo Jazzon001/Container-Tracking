@@ -15,7 +15,7 @@ export type Rol =
   | 'empacador_twt';
 
 /** Lo que un perfil puede hacer con los carros de su proceso. */
-export type Accion = 'cargar' | 'liberar' | 'mantener';
+export type Accion = 'cargar' | 'liberar' | 'mantener' | 'reportes';
 
 export interface Permisos {
   /** Proceso del que ve los carros; null = todos. */
@@ -23,10 +23,12 @@ export interface Permisos {
   cargar: boolean;
   liberar: boolean;
   mantener: boolean;
+  /** Subir el Excel de NOW y ver el reporte de tiempos (solo el administrador). */
+  reportes: boolean;
 }
 
-const COMPLETO = { cargar: true, liberar: true, mantener: true };
-const SIN_CARGAR = { cargar: false, liberar: true, mantener: true };
+const COMPLETO = { cargar: true, liberar: true, mantener: true, reportes: false };
+const SIN_CARGAR = { cargar: false, liberar: true, mantener: true, reportes: false };
 
 /**
  * Qué puede hacer cada perfil. Sirve solo para mostrar u ocultar opciones: la tabla que manda
@@ -34,7 +36,7 @@ const SIN_CARGAR = { cargar: false, liberar: true, mantener: true };
  * otra también debe cambiar.
  */
 export const PERMISOS: Record<Rol, Permisos> = {
-  admin: { tipo: null, ...COMPLETO },
+  admin: { tipo: null, ...COMPLETO, reportes: true },
   // POY
   digitador_poy: { tipo: 'poy', ...COMPLETO },
   intermedio_poy: { tipo: 'poy', ...SIN_CARGAR },
@@ -49,5 +51,5 @@ export const PERMISOS: Record<Rol, Permisos> = {
   // Nombres anteriores: se conservan para no romper a los usuarios ya creados.
   poy: { tipo: 'poy', ...COMPLETO },
   dty: { tipo: 'dty', ...COMPLETO },
-  almacen: { tipo: null, cargar: false, liberar: true, mantener: false },
+  almacen: { tipo: null, cargar: false, liberar: true, mantener: false, reportes: false },
 };

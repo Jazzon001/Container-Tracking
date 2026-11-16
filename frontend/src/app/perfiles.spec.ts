@@ -20,7 +20,12 @@ const ESPERADO: Record<Rol, [string | null, boolean, boolean, boolean]> = {
 
 describe('PERMISOS', () => {
   it.each(Object.entries(ESPERADO))('%s', (rol, [tipo, cargar, liberar, mantener]) => {
-    expect(PERMISOS[rol as Rol]).toEqual({ tipo, cargar, liberar, mantener });
+    expect(PERMISOS[rol as Rol]).toEqual({ tipo, cargar, liberar, mantener, reportes: rol === 'admin' });
+  });
+
+  it('solo el administrador ve el reporte de tiempos', () => {
+    const quienReporta = Object.entries(PERMISOS).filter(([, permisos]) => permisos.reportes).map(([rol]) => rol);
+    expect(quienReporta).toEqual(['admin']);
   });
 
   it('solo los digitadores (y el administrador) pueden cargar', () => {

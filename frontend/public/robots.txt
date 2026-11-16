@@ -6,5 +6,6 @@ Disallow: /carga
 Disallow: /entrega
 Disallow: /mantenimiento
 Disallow: /historial
+Disallow: /reporte
 
 Sitemap: https://container-tracking-lilac.vercel.app/sitemap.xml

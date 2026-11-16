@@ -87,7 +87,7 @@ describe('App', () => {
     const COMPLETO = ['Carros', 'Cargar', 'Recibir', 'Mantenimiento', 'Historial'];
     const SIN_CARGAR = ['Carros', 'Recibir', 'Mantenimiento', 'Historial'];
 
-    it.each(['digitador_poy', 'digitador_dty', 'digitador_twt', 'admin', 'poy', 'dty'] as Rol[])(
+    it.each(['digitador_poy', 'digitador_dty', 'digitador_twt', 'poy', 'dty'] as Rol[])(
       'quien carga ve el menú completo: %s',
       async (rol) => {
         await crear(true, rol);
@@ -102,6 +102,19 @@ describe('App', () => {
         expect(enlaces()).toEqual(SIN_CARGAR);
       },
     );
+
+    it('el administrador ve todo, incluido el Reporte', async () => {
+      await crear(true, 'admin');
+      expect(enlaces()).toEqual([...COMPLETO, 'Reporte']);
+    });
+
+    it('nadie más ve el Reporte', async () => {
+      for (const rol of ['digitador_poy', 'intermedio_poy', 'twisting', 'almacen'] as Rol[]) {
+        TestBed.resetTestingModule();
+        await crear(true, rol);
+        expect(enlaces()).not.toContain('Reporte');
+      }
+    });
 
     it('Almacén (perfil anterior) ve Carros, Recibir e Historial', async () => {
       await crear(true, 'almacen');

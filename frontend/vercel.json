@@ -5,7 +5,7 @@
   "outputDirectory": "dist/container-tracking/browser",
   "redirects": [
     {
-      "source": "/(carros|carga|entrega|mantenimiento|historial)",
+      "source": "/(carros|carga|entrega|mantenimiento|historial|reporte)",
       "missing": [{ "type": "cookie", "key": "ct_sesion" }],
       "destination": "/login",
       "permanent": false
@@ -18,6 +18,7 @@
     { "source": "/entrega", "destination": "/index.html" },
     { "source": "/mantenimiento", "destination": "/index.html" },
     { "source": "/historial", "destination": "/index.html" },
+    { "source": "/reporte", "destination": "/index.html" },
     { "source": "/(.*)", "destination": "/404.html" }
   ],
   "headers": [
