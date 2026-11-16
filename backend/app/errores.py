@@ -62,6 +62,13 @@ class ArchivoInvalido(ErrorDeNegocio):
         super().__init__(detalle)
 
 
+class ArchivoDemasiadoGrande(ErrorDeNegocio):
+    codigo_http = 413
+
+    def __init__(self, limite_mb: int) -> None:
+        super().__init__(f"El archivo pesa más de {limite_mb} MB")
+
+
 class UsuarioExistente(ErrorDeNegocio):
     codigo_http = 409
 

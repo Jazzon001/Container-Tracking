@@ -7,12 +7,16 @@ from datetime import datetime, timedelta
 
 from app.services.reporte_tiempos import (
     Movimiento,
+    Registro,
     agrupar_viajes,
+    armar_reporte,
+    cruzar_con_registros,
     es_recepcion,
     es_tarima,
     es_wip,
     etiqueta_calidad,
     horas,
+    horas_en_dty_por_wip,
     horas_en_rcv_por_calidad,
     horas_en_wip_por_calidad,
     horas_en_wip_por_wip,
@@ -315,3 +319,117 @@ class TestLadosYCalidad:
 def test_horas_redondea_a_un_decimal_y_acepta_nulo():
     assert horas(timedelta(minutes=100)) == 1.7
     assert horas(None) is None
+
+
+class TestCruceConElSistema:
+    """NOW guarda la hora local de la planta y el sistema la guarda en UTC: con -6, UTC = local + 6 h."""
+
+    DESPLAZAMIENTO = -6
+
+    def utc(self, dia, hora):
+        """La hora local de NOW (dia, hora) expresada en UTC."""
+        return datetime(2026, 11, dia, hora) + timedelta(hours=6)
+
+    def registros(self):
+        return {
+            # A1: se escaneó a las 7 (1 h después de la 016) y se liberó a las 20, tras salir hacia DTY a las 12.
+            "A1": Registro(self.utc(1, 7), self.utc(1, 20)),
+            # B2: se escaneó a las 10 (1 h después de la 016) y todavía no sale de RCV01.
+            "B2": Registro(self.utc(1, 10), None),
+            # D4: se escaneó a las 5 (1 h después de la 016), salió hacia DTY a las 9 el día 2 y no se ha liberado.
+            "D4": Registro(self.utc(2, 5), None),
+        }
+
+    def cruzados(self):
+        viajes = agrupar_viajes(MOVIMIENTOS, CORTE)
+        return {v.contenedor: v for v in cruzar_con_registros(viajes, self.registros(), self.DESPLAZAMIENTO, CORTE)}
+
+    def test_un_viaje_sin_registro_en_el_sistema_no_cambia(self):
+        c3 = self.cruzados()["C3"]
+        assert not c3.en_sistema
+        assert c3.cargada_en is None and c3.horas_en_dty is None
+        assert c3.situacion_sistema == "Sin registro en este sistema"
+
+    def test_las_horas_del_sistema_se_pasan_a_la_hora_de_now(self):
+        a1 = self.cruzados()["A1"]
+        assert a1.cargada_en == datetime(2026, 11, 1, 7)
+        assert a1.recibida_en == datetime(2026, 11, 1, 20)
+
+    def test_mide_cuanto_tardo_en_escanearse_desde_la_notificacion(self):
+        assert self.cruzados()["A1"].horas_hasta_escanear == timedelta(hours=1)
+        assert self.cruzados()["B2"].horas_hasta_escanear == timedelta(hours=1)
+
+    def test_mide_las_horas_en_dty_de_la_salida_del_wip_a_la_liberacion(self):
+        a1 = self.cruzados()["A1"]
+        assert a1.horas_en_dty == timedelta(hours=8)  # sale a las 12 y se libera a las 20
+        assert not a1.dty_abierto
+        assert a1.situacion_sistema == "Liberado en el sistema"
+
+    def test_si_aun_no_se_libera_las_horas_corren_hasta_el_corte(self):
+        d4 = self.cruzados()["D4"]
+        assert d4.horas_en_dty == CORTE - datetime(2026, 11, 2, 9)
+        assert d4.dty_abierto
+        assert d4.situacion_sistema == "Cargado en el sistema, sin liberar"
+
+    def test_sin_salida_hacia_dty_no_hay_horas_en_dty(self):
+        b2 = self.cruzados()["B2"]
+        assert b2.en_sistema and b2.horas_en_dty is None and not b2.dty_abierto
+
+    def test_una_liberacion_anterior_a_la_salida_no_se_mide(self):
+        registros = {"A1": Registro(self.utc(1, 7), self.utc(1, 10))}  # liberado a las 10, antes de salir a las 12
+        viajes = cruzar_con_registros(agrupar_viajes(MOVIMIENTOS, CORTE), registros, self.DESPLAZAMIENTO, CORTE)
+        a1 = next(v for v in viajes if v.contenedor == "A1")
+        assert a1.horas_en_dty is None and not a1.dty_abierto
+
+    def test_un_escaneo_anterior_a_la_notificacion_no_se_mide(self):
+        registros = {"A1": Registro(self.utc(1, 5), None)}  # escaneado a las 5, antes de la 016 de las 6
+        viajes = cruzar_con_registros(agrupar_viajes(MOVIMIENTOS, CORTE), registros, self.DESPLAZAMIENTO, CORTE)
+        assert next(v for v in viajes if v.contenedor == "A1").horas_hasta_escanear is None
+
+    def test_el_desplazamiento_cambia_la_hora_de_now(self):
+        registros = {"A1": Registro(datetime(2026, 11, 1, 13), None)}
+        cero = cruzar_con_registros(agrupar_viajes(MOVIMIENTOS, CORTE), registros, 0, CORTE)
+        assert next(v for v in cero if v.contenedor == "A1").cargada_en == datetime(2026, 11, 1, 13)
+
+    def test_por_carro_trae_la_situacion_en_el_sistema_del_ultimo_viaje(self):
+        filas = {f.carro: f for f in por_carro(list(self.cruzados().values()))}
+        p1 = filas["P1"]  # su último viaje es D4
+        assert p1.situacion_sistema == "Cargado en el sistema, sin liberar"
+        assert p1.dty_abierto and p1.horas_en_dty == CORTE - datetime(2026, 11, 2, 9)
+        assert p1.horas_promedio_en_dty == timedelta(hours=8)  # solo cuenta A1, que ya se liberó
+        assert filas["P3"].situacion_sistema == "Sin registro en este sistema"
+
+    def test_el_resumen_trae_lo_del_cruce(self):
+        datos = dict(resumen(list(self.cruzados().values())))
+        assert datos["Viajes registrados en este sistema"] == "3 de 6"
+        assert datos["Horas de la notificación (016) a escanear el carro: promedio"] == 1.0
+        assert datos["Horas en DTY (de salir del WIP a liberar el carro): promedio"] == 8.0
+        assert datos["Viajes en DTY cargados en el sistema y aún sin liberar"] == 1
+        assert datos["El que más lleva en DTY sin liberar"] == "P1: 9.0 h"
+
+    def test_horas_en_dty_por_wip_solo_cuenta_los_liberados(self):
+        assert horas_en_dty_por_wip(list(self.cruzados().values())) == [("WIPB4", 1, 8.0, 8.0)]
+
+
+class TestArmarReporte:
+    def test_sin_registros_no_hay_cruce(self):
+        reporte = armar_reporte(MOVIMIENTOS)
+        datos = dict(reporte.resumen)
+        assert datos["Viajes registrados en este sistema"] == "0 de 6"
+        assert "Viajes en DTY cargados en el sistema y aún sin liberar" in datos
+        assert not any(v.en_sistema for v in reporte.viajes)
+
+    def test_el_corte_es_el_ultimo_movimiento_del_archivo(self):
+        assert armar_reporte(MOVIMIENTOS).corte == datetime(2026, 11, 2, 9)
+
+    def test_trae_las_tablas_de_horas(self):
+        titulos = [t.titulo for t in armar_reporte(MOVIMIENTOS).tablas]
+        assert "Horas en DTY hasta liberar el carro, según el WIP de salida" in titulos
+        assert len(titulos) == 4
+
+    def test_cuenta_las_tarimas(self):
+        assert armar_reporte(MOVIMIENTOS + [mov(1, 8, "EMP", "TARPOY", "T-1")]).tarimas == 1
+
+    def test_sin_movimientos_no_falla(self):
+        reporte = armar_reporte([])
+        assert reporte.viajes == [] and reporte.carros == []

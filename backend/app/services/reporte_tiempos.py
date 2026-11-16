@@ -13,11 +13,15 @@ Cómo se lee el archivo (exportación de movimientos de stock):
 Con las filas de un contenedor se reconstruye: RCV01 (entrada) → WIP (salida de RCV01) → DTY (salida del
 WIP). El archivo puede no traer la entrada (016) si fue anterior a su rango de fechas.
 
+Después se cruza con lo que registró este sistema: cuándo se escaneó el contenedor elemento al cargar el
+carro y cuándo lo liberó intermedio o empaque. De la salida hacia DTY a esa liberación es el tiempo que el
+carro estuvo en DTY.
+
 Un **viaje** es la vida de un contenedor elemento: un mismo carro hace muchos viajes, uno por cada
-vez que se carga. El módulo no conoce Excel ni HTTP: recibe movimientos y devuelve viajes.
+vez que se carga. El módulo no conoce Excel, HTTP ni la base de datos: recibe datos y devuelve viajes.
 """
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timedelta
 from statistics import mean, median
 
@@ -41,12 +45,20 @@ class Movimiento:
     ubicacion: str
     carro: str
     contenedor: str
-    calidad: int | None = None  # la columna Qlt de NOW (por ejemplo, 2 = grado B)
+    calidad: int | None = None  # la columna Qlt de NOW (1 = AA, 2 = A, 3 = B)
     plantilla: str = PLANTILLA_TRANSFERENCIA
 
     @property
     def es_entrada(self) -> bool:
         return self.plantilla == PLANTILLA_ENTRADA
+
+
+@dataclass(frozen=True)
+class Registro:
+    """Lo que este sistema guardó de un contenedor elemento. Las horas van en UTC, sin zona."""
+
+    cargada_en: datetime
+    recibida_en: datetime | None
 
 
 @dataclass(frozen=True)
@@ -66,6 +78,13 @@ class Viaje:
     ultimo_movimiento: datetime
     desde_ultimo_movimiento: timedelta
     situacion: str
+    # Lo que sigue viene del cruce con este sistema. Las horas están en la hora de NOW.
+    en_sistema: bool = False
+    cargada_en: datetime | None = None  # cuándo se escaneó el contenedor elemento en este sistema
+    recibida_en: datetime | None = None  # cuándo lo liberó intermedio o empaque
+    horas_hasta_escanear: timedelta | None = None  # de la notificación (016) al escaneo
+    horas_en_dty: timedelta | None = None  # de salir hacia DTY a la liberación (o hasta el corte, si falta)
+    dty_abierto: bool = False  # salió hacia DTY, se cargó en el sistema y todavía no se libera
 
     @property
     def salio_a_dty(self) -> bool:
@@ -81,6 +100,14 @@ class Viaje:
         """Salió de recepción y todavía no se ve su salida de WIP."""
         return self.salio_de_recepcion_en is not None and self.salio_a_dty_en is None
 
+    @property
+    def situacion_sistema(self) -> str:
+        if not self.en_sistema:
+            return "Sin registro en este sistema"
+        if self.recibida_en is None:
+            return "Cargado en el sistema, sin liberar"
+        return "Liberado en el sistema"
+
 
 @dataclass(frozen=True)
 class FilaCarro:
@@ -92,6 +119,10 @@ class FilaCarro:
     desde_ultimo_movimiento: timedelta
     horas_promedio_en_rcv: timedelta | None
     horas_promedio_en_wip: timedelta | None
+    situacion_sistema: str
+    horas_en_dty: timedelta | None  # del último viaje
+    dty_abierto: bool
+    horas_promedio_en_dty: timedelta | None  # de los viajes ya liberados
 
     @property
     def carro_fisico(self) -> str:
@@ -100,6 +131,25 @@ class FilaCarro:
     @property
     def lado(self) -> str:
         return separar_lado(self.carro)[1]
+
+
+@dataclass(frozen=True)
+class Tabla:
+    """Una tabla de horas agrupada por algo (un WIP, una calidad…)."""
+
+    titulo: str
+    columna: str
+    filas: list[tuple[object, int, float, float]]  # (clave, viajes, horas promedio, horas máximo)
+
+
+@dataclass(frozen=True)
+class Reporte:
+    corte: datetime
+    viajes: list[Viaje]
+    carros: list[FilaCarro]
+    tarimas: int
+    resumen: list[tuple[str, object]]
+    tablas: list[Tabla]
 
 
 def separar_lado(carro: str) -> tuple[str, str]:
@@ -199,6 +249,54 @@ def _viaje(lista: list[Movimiento], corte: datetime) -> Viaje:
     )
 
 
+def cruzar_con_registros(
+    viajes: list[Viaje],
+    registros: dict[str, Registro],
+    desplazamiento_horas: int,
+    corte: datetime,
+) -> list[Viaje]:
+    """Agrega a cada viaje lo que este sistema guardó de su contenedor elemento.
+
+    NOW guarda la hora local de la planta y este sistema la guarda en UTC: `desplazamiento_horas` es
+    la diferencia de la planta con UTC (por ejemplo, -6). Todo se compara en hora de NOW."""
+
+    def a_hora_de_now(utc: datetime) -> datetime:
+        return utc + timedelta(hours=desplazamiento_horas)
+
+    cruzados = []
+    for viaje in viajes:
+        registro = registros.get(viaje.contenedor)
+        if registro is None:
+            cruzados.append(viaje)
+            continue
+
+        cargada = a_hora_de_now(registro.cargada_en)
+        recibida = a_hora_de_now(registro.recibida_en) if registro.recibida_en else None
+
+        hasta_escanear = None
+        if viaje.notificado_en is not None and cargada >= viaje.notificado_en:
+            hasta_escanear = cargada - viaje.notificado_en
+
+        horas_en_dty, abierto = None, False
+        if viaje.salio_a_dty_en is not None:
+            fin = recibida or corte
+            if fin >= viaje.salio_a_dty_en:  # una liberación anterior a la salida no tiene sentido
+                horas_en_dty, abierto = fin - viaje.salio_a_dty_en, recibida is None
+
+        cruzados.append(
+            replace(
+                viaje,
+                en_sistema=True,
+                cargada_en=cargada,
+                recibida_en=recibida,
+                horas_hasta_escanear=hasta_escanear,
+                horas_en_dty=horas_en_dty,
+                dty_abierto=abierto,
+            )
+        )
+    return cruzados
+
+
 def _promedio(valores: list[timedelta]) -> timedelta | None:
     return sum(valores, timedelta()) / len(valores) if valores else None
 
@@ -208,6 +306,16 @@ def _viajes_de_cada_carro(viajes: list[Viaje]) -> dict[str, list[Viaje]]:
     for viaje in viajes:
         agrupados[viaje.carro].append(viaje)
     return agrupados
+
+
+def _horas_en_dty_liberado(viaje: Viaje) -> timedelta | None:
+    """Las horas en DTY, solo si el carro ya se liberó (si no, la espera sigue abierta)."""
+    return None if viaje.dty_abierto else viaje.horas_en_dty
+
+
+def _liberados(viajes: list[Viaje]) -> list[Viaje]:
+    """Los viajes de los que se conoce cuánto tiempo estuvieron en DTY."""
+    return [v for v in viajes if _horas_en_dty_liberado(v) is not None]
 
 
 def por_carro(viajes: list[Viaje]) -> list[FilaCarro]:
@@ -226,6 +334,10 @@ def por_carro(viajes: list[Viaje]) -> list[FilaCarro]:
                 desde_ultimo_movimiento=ultimo.desde_ultimo_movimiento,
                 horas_promedio_en_rcv=_promedio([v.horas_en_rcv for v in lista if v.horas_en_rcv is not None and not v.sigue_en_rcv]),
                 horas_promedio_en_wip=_promedio([v.horas_en_wip for v in lista if v.salio_a_dty and v.horas_en_wip is not None]),
+                situacion_sistema=ultimo.situacion_sistema,
+                horas_en_dty=ultimo.horas_en_dty,
+                dty_abierto=ultimo.dty_abierto,
+                horas_promedio_en_dty=_promedio([v.horas_en_dty for v in _liberados(lista)]),
             )
         )
     return filas
@@ -254,6 +366,7 @@ def resumen(viajes: list[Viaje], tarimas: int = 0) -> list[tuple[str, object]]:
     """Las cifras clave, como pares (indicador, valor) para mostrarlas tal cual."""
     en_rcv = [v for v in viajes if v.sigue_en_rcv]
     en_wip = [v for v in viajes if v.sigue_en_wip and v.horas_en_wip is not None]
+    en_dty = [v for v in viajes if v.dty_abierto and v.horas_en_dty is not None]
     filas: list[tuple[str, object]] = [
         ("Carros físicos (lados A y B juntos)", len({separar_lado(v.carro)[0] for v in viajes})),
         ("Lados de carro (cada A o B, como en NOW)", len({v.carro for v in viajes})),
@@ -272,6 +385,15 @@ def resumen(viajes: list[Viaje], tarimas: int = 0) -> list[tuple[str, object]]:
     filas += _estadisticas("Horas en RCV01 hasta salir hacia WIP", [v.horas_en_rcv for v in viajes if v.horas_en_rcv is not None and not v.sigue_en_rcv])
     filas += _estadisticas("Horas en WIP hasta salir hacia DTY", [v.horas_en_wip for v in viajes if v.salio_a_dty and v.horas_en_wip is not None])
     filas += _estadisticas("Horas en POY (de RCV01 a salir hacia DTY)", [v.horas_en_poy for v in viajes if v.horas_en_poy is not None])
+
+    # Lo que sale del cruce con este sistema.
+    filas.append(("Viajes registrados en este sistema", f"{sum(1 for v in viajes if v.en_sistema)} de {len(viajes)}"))
+    filas += _estadisticas("Horas de la notificación (016) a escanear el carro", [v.horas_hasta_escanear for v in viajes if v.horas_hasta_escanear is not None])
+    filas += _estadisticas("Horas en DTY (de salir del WIP a liberar el carro)", [v.horas_en_dty for v in _liberados(viajes)])
+    filas.append(("Viajes en DTY cargados en el sistema y aún sin liberar", len(en_dty)))
+    if en_dty:
+        mas_antiguo = max(en_dty, key=lambda v: v.horas_en_dty)
+        filas.append(("El que más lleva en DTY sin liberar", f"{mas_antiguo.carro}: {horas(mas_antiguo.horas_en_dty)} h"))
     if tarimas:
         filas.append(("Movimientos de producto en tarima (sin carro)", tarimas))
     return filas
@@ -310,3 +432,28 @@ def horas_en_wip_por_calidad(viajes: list[Viaje]) -> list[tuple[object, int, flo
 
 def horas_en_rcv_por_calidad(viajes: list[Viaje]) -> list[tuple[object, int, float, float]]:
     return _horas_agrupadas(viajes, lambda v: None if v.sigue_en_rcv else v.horas_en_rcv, _calidad)
+
+
+def horas_en_dty_por_wip(viajes: list[Viaje]) -> list[tuple[object, int, float, float]]:
+    """Por el WIP del que salieron hacia DTY: cuánto tardó en liberarse el carro."""
+    return _horas_agrupadas(viajes, _horas_en_dty_liberado, lambda v: v.wip_de_salida)
+
+
+def armar_reporte(
+    movimientos: list[Movimiento],
+    registros: dict[str, Registro] | None = None,
+    desplazamiento_horas: int = 0,
+) -> Reporte:
+    """Todo el reporte a partir de las filas de NOW y, si se tienen, los registros de este sistema."""
+    corte = max((m.instante for m in movimientos), default=datetime.min)
+    viajes = agrupar_viajes(movimientos, corte)
+    if registros:
+        viajes = cruzar_con_registros(viajes, registros, desplazamiento_horas, corte)
+    tarimas = sum(1 for m in movimientos if es_tarima(m))
+    tablas = [
+        Tabla("Horas en RCV01 según la calidad (Qlt de NOW)", "Calidad (Qlt)", horas_en_rcv_por_calidad(viajes)),
+        Tabla("Horas en WIP según el WIP del que salieron hacia DTY", "WIP", horas_en_wip_por_wip(viajes)),
+        Tabla("Horas en WIP según la calidad (Qlt de NOW)", "Calidad (Qlt)", horas_en_wip_por_calidad(viajes)),
+        Tabla("Horas en DTY hasta liberar el carro, según el WIP de salida", "WIP", horas_en_dty_por_wip(viajes)),
+    ]
+    return Reporte(corte, viajes, por_carro(viajes), tarimas, resumen(viajes, tarimas), tablas)

@@ -3,7 +3,8 @@
 Cada perfil tiene un alcance (de qué carros) y tres permisos:
   - cargar:  sacar un carro del stock disponible (lo pone en tránsito);
   - liberar: devolver un carro en tránsito al stock disponible;
-  - mantener: registrar la entrada y la salida de mantenimiento.
+  - mantener: registrar la entrada y la salida de mantenimiento;
+  - reportes: subir el Excel de NOW y ver el reporte de tiempos (solo el administrador).
 
 Consultar carros y el historial lo puede hacer cualquier perfil, pero solo de los carros de
 su alcance: un perfil de POY no ve carros de DTY ni de Twisting.
@@ -22,6 +23,7 @@ class Permisos:
     cargar: bool
     liberar: bool
     mantener: bool
+    reportes: bool = False  # subir el Excel de NOW y ver el reporte de tiempos
 
     def ve(self, tipo: TipoCarro) -> bool:
         return self.tipo is None or self.tipo == tipo
@@ -37,7 +39,7 @@ def _de(tipo: TipoCarro | None, funciones: tuple[bool, bool, bool]) -> Permisos:
 
 
 PERMISOS: dict[Rol, Permisos] = {
-    Rol.ADMIN: _de(None, _COMPLETO),
+    Rol.ADMIN: Permisos(None, cargar=True, liberar=True, mantener=True, reportes=True),
     # POY
     Rol.DIGITADOR_POY: _de(TipoCarro.POY, _COMPLETO),
     Rol.INTERMEDIO_POY: _de(TipoCarro.POY, _SIN_CARGAR),

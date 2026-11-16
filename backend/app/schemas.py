@@ -62,6 +62,49 @@ class MantenimientoOut(BaseModel):
     fecha_salida: FechaUTC | None
 
 
+class IndicadorOut(BaseModel):
+    indicador: str
+    valor: int | float | str
+
+
+class FilaTablaOut(BaseModel):
+    clave: str
+    viajes: int
+    promedio: float
+    maximo: float
+
+
+class TablaOut(BaseModel):
+    titulo: str
+    columna: str
+    filas: list[FilaTablaOut]
+
+
+class FilaCarroOut(BaseModel):
+    carro_fisico: str
+    lado: str
+    carro: str
+    viajes: int
+    ultimo_contenedor: str
+    calidad: str
+    situacion: str
+    horas_en_situacion: float | None
+    horas_promedio_en_rcv: float | None
+    horas_promedio_en_wip: float | None
+    situacion_sistema: str
+    horas_en_dty: float | None
+    dty_abierto: bool
+    horas_promedio_en_dty: float | None
+
+
+class ReporteOut(BaseModel):
+    # Hora local de la planta (la de NOW) del último movimiento del archivo, ya con formato.
+    corte: str
+    resumen: list[IndicadorOut]
+    tablas: list[TablaOut]
+    carros: list[FilaCarroOut]
+
+
 class LoginIn(BaseModel):
     username: Codigo
     password: str
