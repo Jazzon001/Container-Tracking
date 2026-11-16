@@ -3,13 +3,13 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.dependencias import requiere_roles, usuario_actual
-from app.models import Carro, EstadoCarro, Rol, TipoCarro
+from app.dependencias import carro_accesible, permisos_de, requiere_permiso, requiere_roles, usuario_actual
+from app.models import Carro, EstadoCarro, Rol, TipoCarro, Usuario
 from app.schemas import CargaCarro, CarroCreate, CarroOut
 from app.services import carros as servicio
 
-# Consultar carros: cualquier usuario con sesión iniciada.
-# Cada operación que cambia datos exige además un rol concreto.
+# Consultar carros: cualquier usuario con sesión iniciada, pero solo los de su proceso.
+# Cada operación que cambia datos exige además un permiso (ver app/permisos.py).
 router = APIRouter(prefix="/carros", tags=["carros"], dependencies=[Depends(usuario_actual)])
 
 
@@ -36,22 +36,26 @@ def listar_carros(
     numero: str | None = None,
     tipo: TipoCarro | None = None,
     contenedor_elemento: str | None = None,
+    usuario: Usuario = Depends(usuario_actual),
     db: Session = Depends(get_db),
 ):
+    permisos = permisos_de(usuario)
+    if tipo is not None and not permisos.ve(tipo):
+        return []  # pidió carros de otro proceso: para él no hay ninguno
     return servicio.listar_carros(
-        db, estado, numero, tipo, contenedor_elemento=contenedor_elemento
+        db, estado, numero, permisos.tipo or tipo, contenedor_elemento=contenedor_elemento
     )
 
 
 @router.get("/{carro_id}", response_model=CarroOut)
-def obtener_carro(carro_id: int, db: Session = Depends(get_db)):
-    return servicio.obtener_carro(db, carro_id)
+def obtener_carro(carro: Carro = Depends(carro_accesible)):
+    return carro
 
 
 @router.post(
     "/{carro_id}/carga",
     response_model=CarroOut,
-    dependencies=[Depends(requiere_roles(Rol.POY))],
+    dependencies=[Depends(requiere_permiso("cargar")), Depends(carro_accesible)],
 )
 def cargar_carro(carro_id: int, datos: CargaCarro, db: Session = Depends(get_db)):
     return servicio.cargar_carro(db, carro_id, datos.contenedor_elemento)
@@ -60,7 +64,7 @@ def cargar_carro(carro_id: int, datos: CargaCarro, db: Session = Depends(get_db)
 @router.post(
     "/{carro_id}/entrega",
     response_model=CarroOut,
-    dependencies=[Depends(requiere_roles(Rol.ALMACEN))],
+    dependencies=[Depends(requiere_permiso("liberar")), Depends(carro_accesible)],
 )
 def entregar_carro(carro_id: int, db: Session = Depends(get_db)):
     return servicio.entregar_carro(db, carro_id)

@@ -2,7 +2,7 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models import Carga, Carro
+from app.models import Carga, Carro, TipoCarro
 
 
 def listar_cargas(
@@ -10,14 +10,17 @@ def listar_cargas(
     contenedor_elemento: str | None = None,
     numero: str | None = None,
     limite: int = 100,
+    tipo: TipoCarro | None = None,
 ) -> list[Carga]:
     """Las cargas más recientes primero. Los filtros son exactos y se pueden combinar.
 
-    `numero` es el número del carro. `limite` evita traer todo el historial, que crece
+    `numero` es el número del carro y `tipo` limita a los carros de un proceso. `limite` evita traer todo el historial, que crece
     con cada viaje."""
     consulta = select(Carga).order_by(Carga.cargada_en.desc(), Carga.id.desc()).limit(limite)
     if contenedor_elemento is not None:
         consulta = consulta.where(Carga.contenedor_elemento == contenedor_elemento)
     if numero is not None:
         consulta = consulta.where(Carga.carro.has(Carro.numero == numero))
+    if tipo is not None:
+        consulta = consulta.where(Carga.carro.has(Carro.tipo == tipo))
     return list(db.scalars(consulta).all())

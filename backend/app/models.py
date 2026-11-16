@@ -23,11 +23,24 @@ class TipoCarro(str, enum.Enum):
 
 
 class Rol(str, enum.Enum):
+    """Perfil del usuario. Qué puede hacer cada uno está en `app/permisos.py`.
+
+    `POY`, `DTY`, `TWISTING` y `ALMACEN` son los perfiles que existían antes de separar las
+    funciones de cada proceso; se conservan para que los usuarios ya creados sigan entrando.
+    """
+
     POY = "poy"
     ALMACEN = "almacen"
     DTY = "dty"
     TWISTING = "twisting"
     ADMIN = "admin"
+    DIGITADOR_POY = "digitador_poy"
+    INTERMEDIO_POY = "intermedio_poy"
+    EMPACADOR_POY = "empacador_poy"
+    DIGITADOR_DTY = "digitador_dty"
+    EMPACADOR_DTY = "empacador_dty"
+    DIGITADOR_TWT = "digitador_twt"
+    EMPACADOR_TWT = "empacador_twt"
 
 
 class Carro(Base):
