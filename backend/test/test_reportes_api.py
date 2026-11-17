@@ -82,6 +82,17 @@ class TestReporte:
         assert carros["P1A"]["situacion_sistema"] == "Cargado en el sistema, sin liberar"
         assert carros["P1A"]["viajes_en_sistema"] == 1 and carros["P1A"]["viajes"] == 2
 
+    def test_un_contenedor_anulado_con_119_no_cuenta_como_viaje(self, client):
+        filas = FILAS_BASICAS + [
+            fila(2, 6, "RCV01", "P3A", "E1", plantilla="016"),
+            fila(2, 7, "RCV01", "P3A", "E1", plantilla="119"),
+        ]
+        cuerpo = subir(client, contenido=excel(filas)).json()
+        indicadores = {i["indicador"]: i["valor"] for i in cuerpo["resumen"]}
+        assert indicadores["Viajes (contenedores elemento)"] == 2
+        assert indicadores["Contenedores anulados con la plantilla 119 (no cuentan como viaje)"] == 1
+        assert "P3A" not in [c["carro"] for c in cuerpo["carros"]]
+
     def test_no_guarda_el_archivo_ni_cambia_los_carros(self, client, crear_carro):
         crear_carro("P1A")
         antes = client.get("/carros").json()
@@ -90,12 +101,12 @@ class TestReporte:
 
 
 class TestExcel:
-    def test_descarga_un_excel_con_tres_hojas(self, client):
+    def test_descarga_un_excel_con_sus_hojas(self, client):
         respuesta = subir(client, url=URL_EXCEL)
         assert respuesta.status_code == 200
         assert respuesta.headers["content-type"] == reportes.TIPO_XLSX
         assert "reporte_carros.xlsx" in respuesta.headers["content-disposition"]
-        assert load_workbook(BytesIO(respuesta.content)).sheetnames == ["Resumen", "Por carro", "Viajes"]
+        assert load_workbook(BytesIO(respuesta.content)).sheetnames == ["Resumen", "Por carro", "Viajes", "Anulados"]
 
 
 class TestArchivosInvalidos:

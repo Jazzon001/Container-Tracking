@@ -134,6 +134,8 @@ NOTAS = (
     "RCV02 es la última localización antes de que empaque libere el carro: ahí llegan los carros con producto POY de grado B que sale de DTY.",
     "Los carros se parten siempre en un lado A y un lado B (P056A y P056B): cada lado tiene su contenedor elemento y sus viajes.",
     "Calidad (Qlt de NOW): 1 = AA, 2 = A, 3 = B. Empaque la empaca como A o calidad la revisa y la deja como 3 (B), si aplica.",
+    "Plantilla 119 = anulación de una notificación (la negativa de la 016, por un error del operador): ese contenedor no cuenta como viaje y aparece en la hoja Anulados.",
+    "Este reporte analiza el flujo de POY (carros que empiezan con P). Los carros de otros procesos (D, T, DT…) tienen otro flujo y por ahora solo se cuentan.",
     "Si de un contenedor no se ve su 016, se notificó antes del rango del archivo: no se calculan sus horas en RCV01.",
     "Las duraciones de lo que sigue abierto (en RCV01 o en WIP) se miden hasta el último movimiento del archivo y no entran en los promedios.",
     "Las horas en DTY van de la salida del WIP en NOW a la liberación del carro en este sistema (intermedio o empaque, con el contenedor elemento).",
@@ -201,6 +203,17 @@ def escribir_excel(reporte: Reporte) -> bytes:
         [12, 24, 12, 20, 18, 20, 12, 12, 12, 12, 20, 20, 14, 12, 34, 50, 18, 34],
     )
     _fechas(hoja_viajes, [4, 5, 6, 11, 12])
+
+    hoja_anulados = _hoja(
+        libro,
+        "Anulados",
+        ["Carro (NOW)", "Contenedor elemento", "Ubicación", "Notificado (016)", "Anulado el (119)", "Horas hasta la anulación"],
+        [[a.carro, a.contenedor, a.ubicacion, a.notificado_en, a.anulado_en,
+          horas(a.anulado_en - a.notificado_en) if a.notificado_en else None]
+         for a in reporte.anulados],
+        [12, 24, 12, 20, 20, 16],
+    )
+    _fechas(hoja_anulados, [4, 5])
 
     salida = BytesIO()
     libro.save(salida)

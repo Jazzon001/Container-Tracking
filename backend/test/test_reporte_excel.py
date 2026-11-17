@@ -89,8 +89,8 @@ class TestEscribir:
     def libro(self):
         return load_workbook(BytesIO(escribir_excel(armar_reporte(leer_movimientos(excel(FILAS_BASICAS))))))
 
-    def test_trae_tres_hojas(self):
-        assert self.libro().sheetnames == ["Resumen", "Por carro", "Viajes"]
+    def test_trae_sus_hojas(self):
+        assert self.libro().sheetnames == ["Resumen", "Por carro", "Viajes", "Anulados"]
 
     def test_por_carro_deja_los_lados_juntos_y_con_su_carro_fisico(self):
         filas = list(self.libro()["Por carro"].iter_rows(min_row=2, values_only=True))
@@ -107,3 +107,43 @@ class TestEscribir:
         assert any("es la SALIDA de esa ubicación" in t for t in textos)
         assert "Movimientos de producto en tarima (sin carro)" in textos
         assert any("liberación del carro en este sistema" in t for t in textos)
+
+
+class TestAnulados:
+    FILAS = FILAS_BASICAS + [
+        fila(1, 7, "RCV01", "P3A", "E1", plantilla="016"),
+        fila(1, 8, "RCV01", "P3A", "E1", plantilla="119", minuto=45),
+        fila(1, 9, "WIPE", "D064", "D1", plantilla="016"),
+    ]
+
+    def libro(self):
+        return load_workbook(BytesIO(escribir_excel(armar_reporte(leer_movimientos(excel(self.FILAS))))))
+
+    def test_lee_la_plantilla_119_como_una_anulacion(self):
+        movimientos = leer_movimientos(excel(self.FILAS))
+        assert [m.plantilla for m in movimientos if m.contenedor == "E1"] == ["016", "119"]
+        assert next(m for m in movimientos if m.plantilla == "119").es_anulacion
+
+    def test_la_hoja_anulados_lista_los_contenedores_anulados(self):
+        filas = list(self.libro()["Anulados"].iter_rows(min_row=2, values_only=True))
+        assert len(filas) == 1
+        carro, contenedor, ubicacion, notificado, anulado, horas_hasta = filas[0]
+        assert (carro, contenedor, ubicacion) == ("P3A", "E1", "RCV01")
+        assert notificado == datetime(2026, 11, 1, 7, 30) and anulado == datetime(2026, 11, 1, 8, 45)
+        assert horas_hasta == 1.2  # 1 h 15 min
+
+    def test_el_anulado_y_el_de_otro_proceso_no_estan_entre_los_viajes_ni_los_carros(self):
+        libro = self.libro()
+        viajes = [f[1] for f in libro["Viajes"].iter_rows(min_row=2, values_only=True)]
+        assert "E1" not in viajes and "D1" not in viajes
+        carros = [f[2] for f in libro["Por carro"].iter_rows(min_row=2, values_only=True)]
+        assert carros == ["P1A", "P2B"]
+
+    def test_el_resumen_cuenta_los_anulados_y_los_de_otros_procesos(self):
+        resumen = {f[0]: f[1] for f in self.libro()["Resumen"].iter_rows(values_only=True) if f[0]}
+        assert resumen["Contenedores anulados con la plantilla 119 (no cuentan como viaje)"] == 1
+        assert resumen["Contenedores de carros de otros procesos (D, T, DT…), sin analizar"] == 1
+
+    def test_sin_anulados_la_hoja_existe_vacia(self):
+        libro = load_workbook(BytesIO(escribir_excel(armar_reporte(leer_movimientos(excel(FILAS_BASICAS))))))
+        assert list(libro["Anulados"].iter_rows(min_row=2, values_only=True)) == []

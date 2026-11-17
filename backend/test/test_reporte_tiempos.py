@@ -9,6 +9,7 @@ from app.services.reporte_tiempos import (
     Movimiento,
     Registro,
     agrupar_viajes,
+    anulaciones,
     armar_reporte,
     cruzar_con_registros,
     es_tarima,
@@ -479,3 +480,91 @@ class TestArmarReporte:
     def test_sin_movimientos_no_falla(self):
         reporte = armar_reporte([])
         assert reporte.viajes == [] and reporte.carros == []
+
+
+def anular(dia, hora, ubicacion, carro, contenedor, calidad=None):
+    """La plantilla 119: anula la notificación (la negativa de la 016)."""
+    return mov(dia, hora, ubicacion, carro, contenedor, calidad, plantilla="119")
+
+
+class TestAnulaciones:
+    """Un contenedor con una 119 se notificó por error: no cuenta como viaje."""
+
+    # E1 (P1A): notificado a las 6 y anulado a las 7. F2 (P1A): un viaje normal. G3 (P2B): solo se ve su 119.
+    DATOS = [
+        entrada(1, 6, "P1A", "E1"),
+        anular(1, 7, "RCV01", "P1A", "E1"),
+        entrada(1, 8, "P1A", "F2"),
+        mov(1, 10, "RCV01", "P1A", "F2"),
+        anular(1, 9, "RCV01", "P2B", "G3"),
+    ]
+
+    def test_un_contenedor_con_119_no_cuenta_como_viaje(self):
+        viajes = agrupar_viajes(self.DATOS)
+        assert [v.contenedor for v in viajes] == ["F2"]
+
+    def test_la_119_sin_su_016_en_el_archivo_tambien_lo_excluye(self):
+        assert "G3" not in [v.contenedor for v in agrupar_viajes(self.DATOS)]
+
+    def test_un_carro_cuyo_unico_viaje_se_anulo_no_aparece_en_por_carro(self):
+        assert [f.carro for f in por_carro(agrupar_viajes(self.DATOS))] == ["P1A"]
+
+    def test_si_se_anula_el_ultimo_viaje_el_carro_muestra_el_anterior(self):
+        datos = [
+            entrada(1, 6, "P1A", "A"), mov(1, 8, "RCV01", "P1A", "A"), mov(1, 12, "WIPB4", "P1A", "A"),
+            entrada(2, 6, "P1A", "B"), anular(2, 7, "RCV01", "P1A", "B"),
+        ]
+        [fila] = por_carro(agrupar_viajes(datos))
+        assert fila.ultimo_contenedor == "A" and fila.viajes == 1
+        assert fila.situacion == "En DTY (salió de WIPB4)"
+
+    def test_lista_los_anulados_con_cuando_se_notifico_y_cuando_se_anulo(self):
+        anulados = anulaciones(self.DATOS)
+        assert [(a.carro, a.contenedor) for a in anulados] == [("P1A", "E1"), ("P2B", "G3")]
+        e1, g3 = anulados
+        assert e1.notificado_en == datetime(2026, 11, 1, 6) and e1.anulado_en == datetime(2026, 11, 1, 7)
+        assert e1.ubicacion == "RCV01"
+        assert g3.notificado_en is None  # su 016 fue anterior al archivo
+
+    def test_sin_anulaciones_no_hay_anulados(self):
+        assert anulaciones(MOVIMIENTOS) == []
+
+    def test_el_resumen_cuenta_los_anulados_solo_si_hay(self):
+        assert dict(resumen(agrupar_viajes(self.DATOS), anulados=2))[
+            "Contenedores anulados con la plantilla 119 (no cuentan como viaje)"
+        ] == 2
+        assert "Contenedores anulados con la plantilla 119 (no cuentan como viaje)" not in dict(resumen(agrupar_viajes(self.DATOS)))
+
+    def test_armar_reporte_trae_los_anulados_y_no_los_cuenta_como_viaje(self):
+        reporte = armar_reporte(self.DATOS)
+        assert len(reporte.viajes) == 1 and len(reporte.anulados) == 2
+        assert dict(reporte.resumen)["Viajes (contenedores elemento)"] == 1
+
+
+class TestCarrosDeOtrosProcesos:
+    """El reporte analiza el flujo de POY (carros P…). Los D, T y DT tienen otro flujo: solo se cuentan."""
+
+    DATOS = [
+        entrada(1, 6, "P1A", "A1"),
+        entrada(1, 7, "D064", "D1"),
+        entrada(1, 8, "D065", "D2"),
+        entrada(1, 9, "T020", "T1"),
+        entrada(1, 9, "DT07", "X1"),
+        mov(1, 10, "EMP", "TARPOY", "TAR-1"),
+    ]
+
+    def test_solo_los_carros_de_poy_son_viajes(self):
+        assert [v.carro for v in agrupar_viajes(self.DATOS)] == ["P1A"]
+
+    def test_las_tarimas_no_cuentan_como_otro_proceso(self):
+        assert armar_reporte(self.DATOS).otros_contenedores == 4
+        assert armar_reporte(self.DATOS).tarimas == 1
+
+    def test_el_resumen_los_cuenta_aparte(self):
+        datos = dict(armar_reporte(self.DATOS).resumen)
+        assert datos["Contenedores de carros de otros procesos (D, T, DT…), sin analizar"] == 4
+        assert datos["Viajes (contenedores elemento)"] == 1
+
+    def test_un_contenedor_anulado_de_otro_proceso_no_se_lista_como_anulado(self):
+        datos = self.DATOS + [anular(2, 8, "WIPE", "D064", "D1")]
+        assert armar_reporte(datos).anulados == []

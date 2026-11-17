@@ -8,6 +8,8 @@ Cómo se lee el archivo (exportación de movimientos de stock):
     ubicación de la fila:
       * una fila 202 en `RCV01` es la salida de recepción hacia un WIP (lo mueve intermedio);
       * una fila 202 en `WIPxx` es la salida de ese WIP, siempre hacia DTY, donde se deja de rastrear.
+  - Plantilla **119**: la anulación de una notificación, la negativa de la 016 (el operador se equivocó al
+    registrar el carro). Un contenedor con una 119 **no cuenta como viaje**.
   - `RCV02` es la última localización antes de que empaque libere el carro: ahí llegan los carros con
     producto POY de grado B que sale del proceso de DTY.
 
@@ -17,6 +19,9 @@ WIP). El archivo puede no traer la entrada (016) si fue anterior a su rango de f
 Después se cruza con lo que registró este sistema: cuándo se escaneó el contenedor elemento al cargar el
 carro y cuándo lo liberó intermedio o empaque. De la salida hacia DTY a esa liberación es el tiempo que el
 carro estuvo en DTY.
+
+Este reporte analiza el flujo de **POY** (los carros cuyo código empieza con `P`, como `P056A`). Los de otros
+procesos (`D`, `T`, `DT`…) tienen otro flujo y por ahora solo se cuentan.
 
 Un **viaje** es la vida de un contenedor elemento: un mismo carro hace muchos viajes, uno por cada
 vez que se carga. El módulo no conoce Excel, HTTP ni la base de datos: recibe datos y devuelve viajes.
@@ -37,6 +42,8 @@ LADOS = ("A", "B")
 CALIDADES = {1: "AA", 2: "A", 3: "B"}
 PLANTILLA_ENTRADA = "016"  # producción: deja el carro en RCV01
 PLANTILLA_TRANSFERENCIA = "202"  # salida de la ubicación de la fila
+PLANTILLA_ANULACION = "119"  # anula una notificación: la negativa de la 016
+PREFIJO_CARRO_DE_POY = "P"  # P056A, P056B…; los de otros procesos empiezan con D, T, DT…
 
 
 @dataclass(frozen=True)
@@ -53,6 +60,21 @@ class Movimiento:
     @property
     def es_entrada(self) -> bool:
         return self.plantilla == PLANTILLA_ENTRADA
+
+    @property
+    def es_anulacion(self) -> bool:
+        return self.plantilla == PLANTILLA_ANULACION
+
+
+@dataclass(frozen=True)
+class Anulado:
+    """Un contenedor elemento cuya notificación se anuló (plantilla 119): no cuenta como viaje."""
+
+    carro: str
+    contenedor: str
+    ubicacion: str
+    notificado_en: datetime | None  # la 016 anulada; None si fue antes del archivo
+    anulado_en: datetime
 
 
 @dataclass(frozen=True)
@@ -159,6 +181,8 @@ class Reporte:
     tarimas: int
     resumen: list[tuple[str, object]]
     tablas: list[Tabla]
+    anulados: list[Anulado]
+    otros_contenedores: int  # de carros que no son de POY: no se analizan todavía
 
 
 def separar_lado(carro: str) -> tuple[str, str]:
@@ -183,10 +207,40 @@ def es_tarima(movimiento: Movimiento) -> bool:
     return movimiento.carro.upper().startswith(PREFIJO_TARIMA)
 
 
+def es_carro_de_poy(movimiento: Movimiento) -> bool:
+    return movimiento.carro.upper().startswith(PREFIJO_CARRO_DE_POY)
+
+
+def es_de_otro_proceso(movimiento: Movimiento) -> bool:
+    """Un carro de DTY, Twisting u otro: tiene otro flujo que este reporte no modela."""
+    return not es_tarima(movimiento) and not es_carro_de_poy(movimiento)
+
+
+def _contenedores_anulados(movimientos: list[Movimiento]) -> set[str]:
+    return {m.contenedor for m in movimientos if m.es_anulacion}
+
+
+def anulaciones(movimientos: list[Movimiento]) -> list[Anulado]:
+    """Los contenedores de carros de POY con una 119: se notificaron y se anularon."""
+    anulados_en_el_archivo = _contenedores_anulados(movimientos)
+    por_contenedor: dict[str, list[Movimiento]] = defaultdict(list)
+    for m in movimientos:
+        if es_carro_de_poy(m) and m.contenedor in anulados_en_el_archivo:
+            por_contenedor[m.contenedor].append(m)
+    anulados = []
+    for contenedor, lista in por_contenedor.items():
+        entrada = next((m for m in sorted(lista, key=lambda m: m.instante) if m.es_entrada), None)
+        anulacion = next(m for m in sorted(lista, key=lambda m: m.instante) if m.es_anulacion)
+        anulados.append(Anulado(anulacion.carro, contenedor, anulacion.ubicacion, entrada.instante if entrada else None, anulacion.instante))
+    return sorted(anulados, key=lambda a: (a.carro, a.anulado_en))
+
+
 def agrupar_viajes(movimientos: list[Movimiento], corte: datetime | None = None) -> list[Viaje]:
     """Un viaje por contenedor elemento. `corte` es el momento al que se miden las esperas
-    todavía abiertas; por omisión, el último movimiento del archivo."""
-    movimientos = [m for m in movimientos if not es_tarima(m)]
+    todavía abiertas; por omisión, el último movimiento del archivo. No cuentan las tarimas, los carros
+    de otros procesos ni los contenedores anulados con una 119."""
+    anulados = _contenedores_anulados(movimientos)
+    movimientos = [m for m in movimientos if es_carro_de_poy(m) and m.contenedor not in anulados]
     if not movimientos:
         return []
     corte = corte or max(m.instante for m in movimientos)
@@ -382,7 +436,7 @@ def _estadisticas(titulo: str, valores: list[timedelta]) -> list[tuple[str, obje
     ]
 
 
-def resumen(viajes: list[Viaje], tarimas: int = 0) -> list[tuple[str, object]]:
+def resumen(viajes: list[Viaje], tarimas: int = 0, anulados: int = 0, otros: int = 0) -> list[tuple[str, object]]:
     """Las cifras clave, como pares (indicador, valor) para mostrarlas tal cual."""
     en_rcv = [v for v in viajes if v.sigue_en_rcv]
     en_wip = [v for v in viajes if v.sigue_en_wip and v.horas_en_wip is not None]
@@ -415,6 +469,10 @@ def resumen(viajes: list[Viaje], tarimas: int = 0) -> list[tuple[str, object]]:
     if en_dty:
         mas_antiguo = max(en_dty, key=lambda v: v.horas_en_dty)
         filas.append(("El que más lleva en DTY sin liberar", f"{mas_antiguo.carro}: {horas(mas_antiguo.horas_en_dty)} h"))
+    if anulados:
+        filas.append(("Contenedores anulados con la plantilla 119 (no cuentan como viaje)", anulados))
+    if otros:
+        filas.append(("Contenedores de carros de otros procesos (D, T, DT…), sin analizar", otros))
     if tarimas:
         filas.append(("Movimientos de producto en tarima (sin carro)", tarimas))
     return filas
@@ -471,10 +529,12 @@ def armar_reporte(
     if registros:
         viajes = cruzar_con_registros(viajes, registros, desplazamiento_horas, corte)
     tarimas = sum(1 for m in movimientos if es_tarima(m))
+    sin_viaje = anulaciones(movimientos)
+    otros = len({m.contenedor for m in movimientos if es_de_otro_proceso(m)})
     tablas = [
         Tabla("Horas en RCV01 según la calidad (Qlt de NOW)", "Calidad (Qlt)", horas_en_rcv_por_calidad(viajes)),
         Tabla("Horas en WIP según el WIP del que salieron hacia DTY", "WIP", horas_en_wip_por_wip(viajes)),
         Tabla("Horas en WIP según la calidad (Qlt de NOW)", "Calidad (Qlt)", horas_en_wip_por_calidad(viajes)),
         Tabla("Horas en DTY hasta liberar el carro, según el WIP de salida", "WIP", horas_en_dty_por_wip(viajes)),
     ]
-    return Reporte(corte, viajes, por_carro(viajes), tarimas, resumen(viajes, tarimas), tablas)
+    return Reporte(corte, viajes, por_carro(viajes), tarimas, resumen(viajes, tarimas, len(sin_viaje), otros), tablas, sin_viaje, otros)

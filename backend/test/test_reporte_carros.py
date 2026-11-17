@@ -15,14 +15,14 @@ def archivos(tmp_path, monkeypatch):
     return entrada, salida
 
 
-def test_escribe_el_reporte_con_tres_hojas(archivos, capsys):
+def test_escribe_el_reporte_con_sus_hojas(archivos, capsys):
     entrada, salida = archivos
     entrada.write_bytes(excel(FILAS_BASICAS))
 
     assert main() == 0
 
     libro = load_workbook(salida)
-    assert libro.sheetnames == ["Resumen", "Por carro", "Viajes"]
+    assert libro.sheetnames == ["Resumen", "Por carro", "Viajes", "Anulados"]
     carros = [fila[2] for fila in libro["Por carro"].iter_rows(min_row=2, values_only=True)]
     assert carros == ["P1A", "P2B"]  # la tarima no aparece como carro
     assert "2 carros físicos (2 lados A y B), 2 viajes (1 movimientos en tarima" in capsys.readouterr().out
