@@ -28,6 +28,11 @@ export class CarrosService {
     return this.http.get<Carro[]>(`${this.apiUrl}/carros`);
   }
 
+  /** Los carros en tránsito: los que están por liberarse. La API trae solo los del proceso del usuario. */
+  listarEnTransito(): Observable<Carro[]> {
+    return this.http.get<Carro[]>(`${this.apiUrl}/carros`, { params: new HttpParams({ fromObject: { estado: 'en_transito' } }) });
+  }
+
   /**
    * La API opera por id, pero las personas escanean el número del carro.
    * Falla con CarroNoExiste si ese número no está registrado.
@@ -56,8 +61,13 @@ export class CarrosService {
       { contenedor_elemento: contenedorElemento },
       new ContenedorNoEncontrado(contenedorElemento),
     ).pipe(
-      switchMap((carro) => this.http.post<Carro>(`${this.apiUrl}/carros/${carro.id}/entrega`, {})),
+      switchMap((carro) => this.entregar(carro.id)),
     );
+  }
+
+  /** Libera un carro elegido de la lista, sin escanear su contenedor elemento: queda disponible para POY. */
+  entregar(carroId: number): Observable<Carro> {
+    return this.http.post<Carro>(`${this.apiUrl}/carros/${carroId}/entrega`, {});
   }
 
   /** Busca un carro por un campo exacto; si no hay ninguno, falla con el error indicado. */

@@ -111,6 +111,41 @@ describe('CarrosService', () => {
     });
   });
 
+  describe('listarEnTransito', () => {
+    it('pide solo los carros en tránsito', () => {
+      let recibidos: Carro[] = [];
+      servicio.listarEnTransito().subscribe((carros) => (recibidos = carros));
+
+      const peticion = http.expectOne('http://api.test/carros?estado=en_transito');
+      expect(peticion.request.method).toBe('GET');
+      peticion.flush([CARRO]);
+
+      expect(recibidos).toEqual([CARRO]);
+    });
+  });
+
+  describe('entregar', () => {
+    it('libera el carro por su id, sin buscar nada antes', () => {
+      let recibido: Carro | undefined;
+      servicio.entregar(7).subscribe((carro) => (recibido = carro));
+
+      const peticion = http.expectOne('http://api.test/carros/7/entrega');
+      expect(peticion.request.method).toBe('POST');
+      peticion.flush({ ...CARRO, estado: 'disponible' });
+
+      expect(recibido?.estado).toBe('disponible');
+    });
+
+    it('deja pasar el error de la API (por ejemplo, si el carro ya no está en tránsito)', () => {
+      let error: { status?: number } | undefined;
+      servicio.entregar(7).subscribe({ error: (e) => (error = e) });
+
+      http.expectOne('http://api.test/carros/7/entrega').flush({ detail: 'El carro no está en tránsito' }, { status: 409, statusText: 'Conflict' });
+
+      expect(error?.status).toBe(409);
+    });
+  });
+
   describe('entregarPorContenedor', () => {
     const EN_TRANSITO: Carro = { ...CARRO, estado: 'en_transito', contenedor_elemento: '100123' };
 
