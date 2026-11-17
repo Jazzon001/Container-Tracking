@@ -105,7 +105,7 @@ Backend (FastAPI + SQLAlchemy) y frontend (Angular) en desarrollo.
 | `GET /carros` | Lista carros; filtros opcionales `?estado=`, `?numero=`, `?tipo=` y `?contenedor_elemento=` |
 | `GET /carros/{id}` | Consulta un carro |
 | `POST /carros/{id}/carga` | El digitador carga un carro con su contenedor elemento (sale del stock disponible) |
-| `POST /carros/{id}/entrega` | Se libera el carro: vuelve al stock disponible (pantalla *Recibir*) |
+| `POST /carros/{id}/entrega` | Se libera el carro: vuelve al stock disponible (pantalla *Recibir*, escribiendo o escaneando el contenedor elemento, o eligiendo el carro en la lista de los que están en tránsito) |
 | `GET /cargas` | Historial de viajes (carro, contenedor elemento, cargada y recibida); filtros `?numero=` y `?contenedor_elemento=`, y `?limite=` |
 | `POST /carros/{id}/mantenimiento` | Un carro disponible entra a mantenimiento |
 | `POST /carros/{id}/mantenimiento/salida` | El carro sale de mantenimiento |
