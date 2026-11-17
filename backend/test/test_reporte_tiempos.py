@@ -202,7 +202,7 @@ class TestRcv02:
 
     def test_el_resumen_cuenta_los_viajes_que_pasaron_por_rcv02(self):
         datos = dict(resumen(agrupar_viajes(self.COMPLETO + self.SOLO_RCV02)))
-        assert datos["Viajes que ya pasaron por RCV02 (falta que empaque libere el carro)"] == 2
+        assert datos["Contenedores que ya salieron de RCV02 (falta que empaque libere el carro)"] == 2
 
     def test_los_demas_viajes_no_pasaron_por_rcv02(self):
         assert not viaje("A1").paso_por_rcv02
@@ -276,13 +276,13 @@ class TestResumen:
         datos = self.datos()
         assert datos["Lados de carro (cada A o B, como en NOW)"] == 5
         assert datos["Carros físicos (lados A y B juntos)"] == 5  # ninguno de estos códigos tiene lado
-        assert datos["Viajes (contenedores elemento)"] == 6
+        assert datos["Contenedores elemento (cada vez que se carga un carro)"] == 6
 
     def test_cuenta_donde_esta_cada_viaje(self):
         datos = self.datos()
-        assert datos["Viajes que siguen en RCV01 (notificados, sin moverse)"] == 1
-        assert datos["Viajes que siguen en WIP (aún no salen hacia DTY)"] == 2
-        assert datos["Viajes que ya salieron hacia DTY"] == 3
+        assert datos["Contenedores que están ahora en RCV01 (esperando a intermedio)"] == 1
+        assert datos["Contenedores que están ahora en WIP (aún no salen hacia DTY)"] == 2
+        assert datos["Contenedores que ya salieron hacia DTY"] == 3
 
     def test_dice_cual_es_el_que_mas_lleva_en_cada_etapa(self):
         datos = self.datos()
@@ -306,7 +306,7 @@ class TestResumen:
         )
 
     def test_sin_viajes_no_falla(self):
-        assert dict(resumen([]))["Viajes (contenedores elemento)"] == 0
+        assert dict(resumen([]))["Contenedores elemento (cada vez que se carga un carro)"] == 0
 
     def test_horas_en_wip_por_wip_de_salida(self):
         assert horas_en_wip_por_wip(agrupar_viajes(MOVIMIENTOS, CORTE)) == [
@@ -448,10 +448,10 @@ class TestCruceConElSistema:
 
     def test_el_resumen_trae_lo_del_cruce(self):
         datos = dict(resumen(list(self.cruzados().values())))
-        assert datos["Viajes registrados en este sistema"] == "3 de 6"
-        assert datos["Horas de la notificación (016) a escanear el carro: promedio"] == 1.0
-        assert datos["Horas en DTY (de salir del WIP a liberar el carro): promedio"] == 8.0
-        assert datos["Viajes en DTY cargados en el sistema y aún sin liberar"] == 1
+        assert datos["Contenedores registrados en la aplicación"] == 3
+        assert datos["Horas de la notificación (016) a cargarlo en la aplicación: promedio"] == 1.0
+        assert datos["Horas en DTY (de salir del WIP a liberarse en la aplicación): promedio"] == 8.0
+        assert datos["Contenedores en DTY cargados en la aplicación y sin liberar"] == 1
         assert datos["El que más lleva en DTY sin liberar"] == "P1: 9.0 h"
 
     def test_horas_en_dty_por_wip_solo_cuenta_los_liberados(self):
@@ -462,8 +462,8 @@ class TestArmarReporte:
     def test_sin_registros_no_hay_cruce(self):
         reporte = armar_reporte(MOVIMIENTOS)
         datos = dict(reporte.resumen)
-        assert datos["Viajes registrados en este sistema"] == "0 de 6"
-        assert "Viajes en DTY cargados en el sistema y aún sin liberar" in datos
+        assert datos["Contenedores registrados en la aplicación"] == 0
+        assert "Contenedores en DTY cargados en la aplicación y sin liberar" in datos
         assert not any(v.en_sistema for v in reporte.viajes)
 
     def test_el_corte_es_el_ultimo_movimiento_del_archivo(self):
@@ -531,14 +531,14 @@ class TestAnulaciones:
 
     def test_el_resumen_cuenta_los_anulados_solo_si_hay(self):
         assert dict(resumen(agrupar_viajes(self.DATOS), anulados=2))[
-            "Contenedores anulados con la plantilla 119 (no cuentan como viaje)"
+            "Contenedores anulados con la plantilla 119 (no se cuentan)"
         ] == 2
-        assert "Contenedores anulados con la plantilla 119 (no cuentan como viaje)" not in dict(resumen(agrupar_viajes(self.DATOS)))
+        assert "Contenedores anulados con la plantilla 119 (no se cuentan)" not in dict(resumen(agrupar_viajes(self.DATOS)))
 
     def test_armar_reporte_trae_los_anulados_y_no_los_cuenta_como_viaje(self):
         reporte = armar_reporte(self.DATOS)
         assert len(reporte.viajes) == 1 and len(reporte.anulados) == 2
-        assert dict(reporte.resumen)["Viajes (contenedores elemento)"] == 1
+        assert dict(reporte.resumen)["Contenedores elemento (cada vez que se carga un carro)"] == 1
 
 
 class TestCarrosDeOtrosProcesos:
@@ -563,7 +563,7 @@ class TestCarrosDeOtrosProcesos:
     def test_el_resumen_los_cuenta_aparte(self):
         datos = dict(armar_reporte(self.DATOS).resumen)
         assert datos["Contenedores de carros de otros procesos (D, T, DT…), sin analizar"] == 4
-        assert datos["Viajes (contenedores elemento)"] == 1
+        assert datos["Contenedores elemento (cada vez que se carga un carro)"] == 1
 
     def test_un_contenedor_anulado_de_otro_proceso_no_se_lista_como_anulado(self):
         datos = self.DATOS + [anular(2, 8, "WIPE", "D064", "D1")]

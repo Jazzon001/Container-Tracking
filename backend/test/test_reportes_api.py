@@ -41,7 +41,7 @@ class TestReporte:
         assert set(cuerpo) == {"corte", "resumen", "tablas", "carros"}
         assert cuerpo["corte"] == "01/11/2026 12:30"  # el último movimiento del archivo
         indicadores = {i["indicador"]: i["valor"] for i in cuerpo["resumen"]}
-        assert indicadores["Viajes (contenedores elemento)"] == 2
+        assert indicadores["Contenedores elemento (cada vez que se carga un carro)"] == 2
         assert indicadores["Movimientos de producto en tarima (sin carro)"] == 1
 
     def test_los_carros_traen_sus_lados_juntos(self, client):
@@ -89,8 +89,8 @@ class TestReporte:
         ]
         cuerpo = subir(client, contenido=excel(filas)).json()
         indicadores = {i["indicador"]: i["valor"] for i in cuerpo["resumen"]}
-        assert indicadores["Viajes (contenedores elemento)"] == 2
-        assert indicadores["Contenedores anulados con la plantilla 119 (no cuentan como viaje)"] == 1
+        assert indicadores["Contenedores elemento (cada vez que se carga un carro)"] == 2
+        assert indicadores["Contenedores anulados con la plantilla 119 (no se cuentan)"] == 1
         assert "P3A" not in [c["carro"] for c in cuerpo["carros"]]
 
     def test_no_guarda_el_archivo_ni_cambia_los_carros(self, client, crear_carro):
@@ -106,7 +106,7 @@ class TestExcel:
         assert respuesta.status_code == 200
         assert respuesta.headers["content-type"] == reportes.TIPO_XLSX
         assert "reporte_carros.xlsx" in respuesta.headers["content-disposition"]
-        assert load_workbook(BytesIO(respuesta.content)).sheetnames == ["Resumen", "Por carro", "Viajes", "Anulados"]
+        assert load_workbook(BytesIO(respuesta.content)).sheetnames == ["Resumen", "Contenedores", "Carros", "Anulados", "Cómo leer"]
 
 
 class TestArchivosInvalidos:

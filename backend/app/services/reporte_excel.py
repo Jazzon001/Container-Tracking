@@ -1,7 +1,10 @@
 """Lectura del Excel de NOW y escritura del Excel del reporte, todo en memoria.
 
 Lo que llega aquí es un archivo que alguien subió: se revisa antes de abrirlo (tamaño ya descomprimido y
-número de filas) y cualquier problema se devuelve como un error claro, no como una caída."""
+número de filas) y cualquier problema se devuelve como un error claro, no como una caída.
+
+El Excel del reporte está pensado para leerse sin explicación: una fila por contenedor elemento (cada
+vez que se carga un carro), con la etapa en que está y las horas que pasó en cada una."""
 import zipfile
 from datetime import date, datetime, time
 from io import BytesIO
@@ -13,10 +16,11 @@ from openpyxl.utils.exceptions import InvalidFileException
 
 from app.errores import ArchivoInvalido
 from app.services.reporte_tiempos import (
+    CALIDADES,
     PLANTILLA_TRANSFERENCIA,
     Movimiento,
     Reporte,
-    etiqueta_calidad,
+    Viaje,
     horas,
 )
 
@@ -29,6 +33,7 @@ FORMATO_FECHA = "dd/mm/yyyy hh:mm"
 
 LIMITE_DESCOMPRIMIDO = 100 * 1024 * 1024  # un .xlsx de miles de filas descomprime a pocos MB
 LIMITE_FILAS = 200_000
+LOS_MAS_ANTIGUOS = 10  # cuántos se listan en "los que más llevan esperando"
 
 
 def _combinar(fecha: date | datetime, hora: time | datetime) -> datetime:
@@ -105,6 +110,23 @@ def leer_movimientos(contenido: bytes) -> list[Movimiento]:
         libro.close()
 
 
+# ----------------------------------------------------------------------------------------------
+# Escritura
+# ----------------------------------------------------------------------------------------------
+
+
+def _calidad_en_letras(calidad: int | None) -> str:
+    """AA, A o B (la calidad de NOW); un número que no se conoce se muestra tal cual."""
+    if calidad is None:
+        return "sin dato"
+    return CALIDADES.get(calidad, str(calidad))
+
+
+def _negrita(hoja, fila: int) -> None:
+    for celda in hoja[fila]:
+        celda.font = Font(bold=True)
+
+
 def _hoja(libro: Workbook, titulo: str, cabecera: list[str], filas: list[list], anchos: list[int]):
     hoja = libro.create_sheet(titulo)
     hoja.append(cabecera)
@@ -127,93 +149,173 @@ def _fechas(hoja, columnas: list[int]) -> None:
             fila[numero - 1].number_format = FORMATO_FECHA
 
 
-NOTAS = (
-    "Plantilla 016 = producción: deja el carro puesto en RCV01 (la entrada). Plantilla 202 = transferencia: cada fila es la SALIDA de esa ubicación.",
-    "Una fila 202 en RCV01 = salió de recepción hacia un WIP. Una fila 202 en WIPxx = salió de ese WIP hacia DTY, donde se deja de rastrear.",
-    "Un viaje es la vida de un contenedor elemento; un carro hace muchos viajes.",
-    "RCV02 es la última localización antes de que empaque libere el carro: ahí llegan los carros con producto POY de grado B que sale de DTY.",
-    "Los carros se parten siempre en un lado A y un lado B (P056A y P056B): cada lado tiene su contenedor elemento y sus viajes.",
-    "Calidad (Qlt de NOW): 1 = AA, 2 = A, 3 = B. Empaque la empaca como A o calidad la revisa y la deja como 3 (B), si aplica.",
-    "Plantilla 119 = anulación de una notificación (la negativa de la 016, por un error del operador): ese contenedor no cuenta como viaje y aparece en la hoja Anulados.",
-    "Este reporte analiza el flujo de POY (carros que empiezan con P). Los carros de otros procesos (D, T, DT…) tienen otro flujo y por ahora solo se cuentan.",
-    "Si de un contenedor no se ve su 016, se notificó antes del rango del archivo: no se calculan sus horas en RCV01.",
-    "Las duraciones de lo que sigue abierto (en RCV01 o en WIP) se miden hasta el último movimiento del archivo y no entran en los promedios.",
-    "Las horas en DTY van de la salida del WIP en NOW a la liberación del carro en este sistema (intermedio o empaque, con el contenedor elemento).",
-    "Un viaje sin registro en este sistema no tiene horas en DTY: el carro no se cargó o no se liberó aquí.",
-)
+ESTADISTICAS = ("promedio", "mediana", "máximo")
+
+
+def _separar_estadisticas(resumen: list[tuple[str, object]]):
+    """Separa las cifras sueltas de las estadísticas ("Horas en WIP …: promedio"), que se muestran
+    como una tabla con una fila por etapa y una columna por estadística."""
+    cifras: list[tuple[str, object]] = []
+    tabla: dict[str, dict[str, object]] = {}
+    for indicador, valor in resumen:
+        titulo, _, estadistica = indicador.rpartition(": ")
+        if titulo and estadistica in ESTADISTICAS:
+            tabla.setdefault(titulo, {})[estadistica] = valor
+        else:
+            cifras.append((indicador, valor))
+    return cifras, tabla
+
+
+def _seccion(hoja, titulo: str) -> None:
+    hoja.append([])
+    hoja.append([titulo])
+    hoja.cell(row=hoja.max_row, column=1).font = Font(bold=True, size=12)
+
+
+def _los_que_mas_llevan(hoja, titulo: str, viajes: list[Viaje], horas_de) -> None:
+    """Los contenedores que más tiempo llevan en una etapa que todavía no terminan."""
+    elegidos = sorted((v for v in viajes if horas_de(v) is not None), key=horas_de, reverse=True)[:LOS_MAS_ANTIGUOS]
+    if not elegidos:
+        return
+    _seccion(hoja, titulo)
+    hoja.append(["Carro", "Contenedor elemento", "Horas ahí", "Desde"])
+    _negrita(hoja, hoja.max_row)
+    for v in elegidos:
+        hoja.append([v.carro, v.contenedor, horas(horas_de(v)), v.ultimo_movimiento])
+        hoja.cell(row=hoja.max_row, column=4).number_format = FORMATO_FECHA
 
 
 def _hoja_resumen(libro: Workbook, reporte: Reporte) -> None:
     hoja = libro.create_sheet("Resumen")
     hoja.append(["Reporte de carros a partir de los movimientos de NOW"])
     hoja["A1"].font = Font(bold=True, size=14)
-    hoja.append([f"Medido al último movimiento del archivo: {reporte.corte:%d/%m/%Y %H:%M}"])
-    hoja.append([])
-    for indicador, valor in reporte.resumen:
+    hoja.append([f"Medido al último movimiento del archivo: {reporte.corte:%d/%m/%Y %H:%M} (hora de NOW)"])
+    hoja.append(["Cada fila de la hoja Contenedores es un contenedor elemento: cada vez que se carga un carro. Detalles en la hoja Cómo leer."])
+
+    cifras, estadisticas = _separar_estadisticas(reporte.resumen)
+    _seccion(hoja, "Cuántos hay y dónde están")
+    for indicador, valor in cifras:
         hoja.append([indicador, valor])
+
+    if estadisticas:
+        _seccion(hoja, "Cuánto tiempo pasan (horas, solo de lo que ya terminó la etapa)")
+        hoja.append(["Etapa", "Promedio", "Mediana", "Máximo"])
+        _negrita(hoja, hoja.max_row)
+        for titulo, valores in estadisticas.items():
+            hoja.append([titulo] + [valores.get(e) for e in ESTADISTICAS])
+
+    _los_que_mas_llevan(hoja, f"Los {LOS_MAS_ANTIGUOS} que más llevan en RCV01 esperando a intermedio", reporte.viajes,
+                        lambda v: v.horas_en_rcv if v.sigue_en_rcv else None)
+    _los_que_mas_llevan(hoja, f"Los {LOS_MAS_ANTIGUOS} que más llevan en WIP sin salir hacia DTY", reporte.viajes,
+                        lambda v: v.horas_en_wip if v.sigue_en_wip else None)
+    _los_que_mas_llevan(hoja, f"Los {LOS_MAS_ANTIGUOS} que más llevan en DTY sin liberarse en la aplicación", reporte.viajes,
+                        lambda v: v.horas_en_dty if v.dty_abierto else None)
+
     for tabla in reporte.tablas:
-        hoja.append([])
-        hoja.append([tabla.titulo])
-        hoja.cell(row=hoja.max_row, column=1).font = Font(bold=True)
-        hoja.append([tabla.columna, "Viajes", "Horas promedio", "Horas máximo"])
-        for celda in hoja[hoja.max_row]:
-            celda.font = Font(bold=True)
+        if not tabla.filas:
+            continue
+        _seccion(hoja, tabla.titulo)
+        hoja.append([tabla.columna, "Contenedores", "Horas promedio", "Horas máximo"])
+        _negrita(hoja, hoja.max_row)
         for fila in tabla.filas:
             hoja.append(list(fila))
-    hoja.append([])
-    for nota in NOTAS:
-        hoja.append([nota])
-    hoja.column_dimensions["A"].width = 66
+
+    hoja.column_dimensions["A"].width = 70
     for letra in "BCD":
-        hoja.column_dimensions[letra].width = 16
+        hoja.column_dimensions[letra].width = 18
 
 
-def escribir_excel(reporte: Reporte) -> bytes:
-    """El reporte como un Excel con tres hojas (Resumen, Por carro y Viajes), en bytes."""
-    libro = Workbook()
-    libro.remove(libro.active)
-    _hoja_resumen(libro, reporte)
+def _hoja_contenedores(libro: Workbook, viajes: list[Viaje]) -> None:
+    hoja = _hoja(
+        libro,
+        "Contenedores",
+        ["Carro", "Carro físico", "Lado", "Contenedor elemento", "Calidad",
+         "Dónde está ahora", "Desde", "Lleva ahí (horas)",
+         "Entró a RCV01 (producción, 016)", "Salió de RCV01 (hacia WIP)", "Salió del WIP (hacia DTY)", "WIP del que salió",
+         "Horas en RCV01", "Horas en WIP", "Horas en POY (RCV01 + WIP)",
+         "Cargado en la aplicación", "Liberado en la aplicación", "Horas hasta cargarlo en la aplicación", "Horas en DTY (hasta liberarse)",
+         "Estado en la aplicación", "Recorrido"],
+        [[v.carro, v.carro_fisico, v.lado, v.contenedor, _calidad_en_letras(v.calidad),
+          v.etapa, v.ultimo_movimiento, horas(v.desde_ultimo_movimiento),
+          v.notificado_en, v.salio_de_recepcion_en, v.salio_a_dty_en, v.wip_de_salida,
+          # Las duraciones solo se llenan cuando la etapa ya terminó; lo que sigue en curso está en "Lleva ahí".
+          horas(None if v.sigue_en_rcv else v.horas_en_rcv),
+          horas(v.horas_en_wip if v.salio_a_dty else None),
+          horas(v.horas_en_poy),
+          v.cargada_en, v.recibida_en, horas(v.horas_hasta_escanear),
+          horas(None if v.dty_abierto else v.horas_en_dty),
+          v.situacion_sistema, v.recorrido]
+         for v in viajes],
+        [10, 11, 6, 24, 9, 40, 18, 12, 20, 20, 20, 12, 11, 11, 13, 20, 20, 16, 14, 34, 34],
+    )
+    _fechas(hoja, [7, 9, 10, 11, 16, 17])
 
+
+def _hoja_carros(libro: Workbook, reporte: Reporte) -> None:
     _hoja(
         libro,
-        "Por carro",
-        ["Carro físico", "Lado", "Carro (NOW)", "Viajes", "Último contenedor elemento", "Calidad (Qlt)",
-         "Situación (NOW)", "Horas en esa situación", "Horas promedio en RCV01", "Horas promedio en WIP",
-         "En este sistema (último viaje registrado)", "Viajes registrados en el sistema", "Horas en DTY (ese viaje)", "Horas promedio en DTY"],
-        [[c.carro_fisico, c.lado, c.carro, c.viajes, c.ultimo_contenedor, etiqueta_calidad(c.calidad),
-          c.situacion, horas(c.desde_ultimo_movimiento), horas(c.horas_promedio_en_rcv),
-          horas(c.horas_promedio_en_wip), c.situacion_sistema, f"{c.viajes_en_sistema} de {c.viajes}",
-          horas(c.horas_en_dty), horas(c.horas_promedio_en_dty)]
+        "Carros",
+        ["Carro físico", "Lado", "Carro", "Veces cargado (en NOW)", "Último contenedor elemento", "Calidad",
+         "Dónde está ahora", "Lleva ahí (horas)", "Promedio de horas en RCV01", "Promedio de horas en WIP",
+         "Veces cargado en la aplicación", "Último estado en la aplicación", "Horas en DTY (ese contenedor)", "Promedio de horas en DTY"],
+        [[c.carro_fisico, c.lado, c.carro, c.viajes, c.ultimo_contenedor, _calidad_en_letras(c.calidad),
+          c.etapa, horas(c.desde_ultimo_movimiento), horas(c.horas_promedio_en_rcv), horas(c.horas_promedio_en_wip),
+          c.viajes_en_sistema, c.situacion_sistema,
+          horas(None if c.dty_abierto else c.horas_en_dty), horas(c.horas_promedio_en_dty)]
          for c in reporte.carros],
-        [12, 6, 12, 8, 24, 12, 58, 14, 14, 14, 34, 16, 14, 14],
+        [11, 6, 9, 14, 24, 9, 40, 12, 14, 14, 16, 34, 16, 14],
     )
 
-    hoja_viajes = _hoja(
-        libro,
-        "Viajes",
-        ["Carro (NOW)", "Contenedor elemento", "Calidad (Qlt)", "Notificado en RCV01 (016)", "Salió de recepción el",
-         "Salió de WIP hacia DTY el", "WIP de salida", "Horas en RCV01", "Horas en WIP", "Horas en POY",
-         "Escaneado en el sistema", "Liberado en el sistema", "Horas hasta escanear", "Horas en DTY",
-         "En este sistema", "Situación (NOW)", "Horas desde el último movimiento", "Recorrido"],
-        [[v.carro, v.contenedor, etiqueta_calidad(v.calidad), v.notificado_en, v.salio_de_recepcion_en,
-          v.salio_a_dty_en, v.wip_de_salida, horas(v.horas_en_rcv), horas(v.horas_en_wip), horas(v.horas_en_poy),
-          v.cargada_en, v.recibida_en, horas(v.horas_hasta_escanear), horas(v.horas_en_dty),
-          v.situacion_sistema, v.situacion, horas(v.desde_ultimo_movimiento), v.recorrido]
-         for v in reporte.viajes],
-        [12, 24, 12, 20, 18, 20, 12, 12, 12, 12, 20, 20, 14, 12, 34, 50, 18, 34],
-    )
-    _fechas(hoja_viajes, [4, 5, 6, 11, 12])
 
-    hoja_anulados = _hoja(
+def _hoja_anulados(libro: Workbook, reporte: Reporte) -> None:
+    hoja = _hoja(
         libro,
         "Anulados",
-        ["Carro (NOW)", "Contenedor elemento", "Ubicación", "Notificado (016)", "Anulado el (119)", "Horas hasta la anulación"],
+        ["Carro", "Contenedor elemento", "Ubicación", "Notificado (016)", "Anulado el (119)", "Horas hasta anularlo"],
         [[a.carro, a.contenedor, a.ubicacion, a.notificado_en, a.anulado_en,
           horas(a.anulado_en - a.notificado_en) if a.notificado_en else None]
          for a in reporte.anulados],
-        [12, 24, 12, 20, 20, 16],
+        [10, 24, 12, 20, 20, 16],
     )
-    _fechas(hoja_anulados, [4, 5])
+    _fechas(hoja, [4, 5])
+
+
+COMO_LEER = (
+    ("Qué es una fila", "Cada fila de la hoja Contenedores es un contenedor elemento: el código de barras que se genera cada vez que se carga un carro. Un mismo carro aparece en varias filas, una por cada vez que se cargó."),
+    ("Carros y lados", "Un carro se parte siempre en un lado A y un lado B (P056A y P056B): cada lado tiene su propio contenedor elemento. La columna Carro físico (P056) los junta."),
+    ("Etapas", "1 · En RCV01: se notificó y espera a que intermedio lo mueva.  2 · En WIP: intermedio ya lo movió y falta que salga hacia DTY.  3 · En DTY: salió del WIP (NOW deja de rastrearlo).  4 · Salió de RCV02: volvió de DTY y falta que empaque libere el carro."),
+    ("Desde y Lleva ahí", "Desde es el momento en que entró a la etapa actual y Lleva ahí son las horas que lleva en ella, medidas hasta el último movimiento del archivo."),
+    ("Horas en RCV01, WIP y POY", "Solo se llenan cuando la etapa ya terminó. Horas en POY es la suma de RCV01 y WIP. Si el contenedor se notificó antes del rango del archivo, no se puede medir RCV01."),
+    ("Horas en DTY", "Van de la salida del WIP en NOW a que intermedio o empaque libere el carro en la aplicación con su contenedor elemento. Solo existen si el carro se cargó y se liberó en la aplicación."),
+    ("Calidad", "AA, A o B, según la columna Qlt de NOW (1, 2 y 3). Empaque la empaca como A, o calidad la revisa y la deja como B."),
+    ("Cómo se lee NOW", "La plantilla 016 es la producción: deja el carro en RCV01 (la entrada). La 202 es una transferencia: cada fila es la SALIDA de esa ubicación. La salida de un WIP es siempre hacia DTY."),
+    ("Anulados", "La plantilla 119 anula una notificación (la negativa de la 016, por un error del operador). Esos contenedores no cuentan y están en la hoja Anulados."),
+    ("Otros procesos y tarimas", "Este reporte analiza el flujo de POY (carros que empiezan con P). Los carros de otros procesos (D, T, DT…) y las tarimas (TARPOY) solo se cuentan en el Resumen."),
+)
+
+
+def _hoja_como_leer(libro: Workbook) -> None:
+    hoja = libro.create_sheet("Cómo leer")
+    hoja.append(["Cómo leer este reporte"])
+    hoja["A1"].font = Font(bold=True, size=14)
+    for tema, texto in COMO_LEER:
+        hoja.append([tema, texto])
+        hoja.cell(row=hoja.max_row, column=1).font = Font(bold=True)
+        hoja.cell(row=hoja.max_row, column=2).alignment = Alignment(wrap_text=True, vertical="top")
+        hoja.cell(row=hoja.max_row, column=1).alignment = Alignment(vertical="top")
+    hoja.column_dimensions["A"].width = 26
+    hoja.column_dimensions["B"].width = 110
+
+
+def escribir_excel(reporte: Reporte) -> bytes:
+    """El reporte como un Excel (Resumen, Contenedores, Carros, Anulados y Cómo leer), en bytes."""
+    libro = Workbook()
+    libro.remove(libro.active)
+    _hoja_resumen(libro, reporte)
+    _hoja_contenedores(libro, reporte.viajes)
+    _hoja_carros(libro, reporte)
+    _hoja_anulados(libro, reporte)
+    _hoja_como_leer(libro)
 
     salida = BytesIO()
     libro.save(salida)

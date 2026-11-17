@@ -103,6 +103,7 @@ class Viaje:
     ultimo_movimiento: datetime
     desde_ultimo_movimiento: timedelta
     situacion: str
+    etapa: str  # en qué punto está, en palabras: "1 · En RCV01…", "2 · En WIP…", "3 · En DTY"
     # Lo que sigue viene del cruce con este sistema. Las horas están en la hora de NOW.
     en_sistema: bool = False
     cargada_en: datetime | None = None  # cuándo se escaneó el contenedor elemento en este sistema
@@ -110,6 +111,14 @@ class Viaje:
     horas_hasta_escanear: timedelta | None = None  # de la notificación (016) al escaneo
     horas_en_dty: timedelta | None = None  # de salir hacia DTY a la liberación (o hasta el corte, si falta)
     dty_abierto: bool = False  # salió hacia DTY, se cargó en el sistema y todavía no se libera
+
+    @property
+    def carro_fisico(self) -> str:
+        return separar_lado(self.carro)[0]
+
+    @property
+    def lado(self) -> str:
+        return separar_lado(self.carro)[1]
 
     @property
     def salio_a_dty(self) -> bool:
@@ -145,6 +154,7 @@ class FilaCarro:
     ultimo_contenedor: str
     calidad: int | None
     situacion: str
+    etapa: str
     desde_ultimo_movimiento: timedelta
     horas_promedio_en_rcv: timedelta | None
     horas_promedio_en_wip: timedelta | None
@@ -267,6 +277,20 @@ def _situacion(salidas: list[Movimiento]) -> str:
     return f"Salió de {ultima.ubicacion}"
 
 
+def _etapa(salidas: list[Movimiento]) -> str:
+    """En qué punto del recorrido está, con el número de la etapa para que se ordene bien."""
+    if not salidas:
+        return "1 · En RCV01 (esperando a intermedio)"
+    ultima = salidas[-1]
+    if ultima.ubicacion == ULTIMA_LOCALIZACION:
+        return "4 · Salió de RCV02 (falta que empaque libere el carro)"
+    if es_wip(ultima.ubicacion):
+        return "3 · En DTY"
+    if ultima.ubicacion == RECEPCION:
+        return "2 · En WIP (aún no sale hacia DTY)"
+    return f"Salió de {ultima.ubicacion}"
+
+
 def _recorrido(lista: list[Movimiento], salio_a_dty: bool, en_wip: bool) -> str:
     """Las ubicaciones por las que pasó, en orden. La salida del último WIP es hacia DTY."""
     ultimo_wip = max((i for i, m in enumerate(lista) if es_wip(m.ubicacion)), default=None)
@@ -317,6 +341,7 @@ def _viaje(lista: list[Movimiento], corte: datetime) -> Viaje:
         ultimo_movimiento=lista[-1].instante,
         desde_ultimo_movimiento=corte - lista[-1].instante,
         situacion=_situacion(salidas),
+        etapa=_etapa(salidas),
     )
 
 
@@ -404,6 +429,7 @@ def por_carro(viajes: list[Viaje]) -> list[FilaCarro]:
                 ultimo_contenedor=ultimo.contenedor,
                 calidad=ultimo.calidad,
                 situacion=ultimo.situacion,
+                etapa=ultimo.etapa,
                 desde_ultimo_movimiento=ultimo.desde_ultimo_movimiento,
                 horas_promedio_en_rcv=_promedio([v.horas_en_rcv for v in lista if v.horas_en_rcv is not None and not v.sigue_en_rcv]),
                 horas_promedio_en_wip=_promedio([v.horas_en_wip for v in lista if v.salio_a_dty and v.horas_en_wip is not None]),
@@ -444,11 +470,11 @@ def resumen(viajes: list[Viaje], tarimas: int = 0, anulados: int = 0, otros: int
     filas: list[tuple[str, object]] = [
         ("Carros físicos (lados A y B juntos)", len({separar_lado(v.carro)[0] for v in viajes})),
         ("Lados de carro (cada A o B, como en NOW)", len({v.carro for v in viajes})),
-        ("Viajes (contenedores elemento)", len(viajes)),
-        ("Viajes que siguen en RCV01 (notificados, sin moverse)", len(en_rcv)),
-        ("Viajes que siguen en WIP (aún no salen hacia DTY)", len(en_wip)),
-        ("Viajes que ya salieron hacia DTY", sum(1 for v in viajes if v.salio_a_dty)),
-        ("Viajes que ya pasaron por RCV02 (falta que empaque libere el carro)", sum(1 for v in viajes if v.paso_por_rcv02)),
+        ("Contenedores elemento (cada vez que se carga un carro)", len(viajes)),
+        ("Contenedores que están ahora en RCV01 (esperando a intermedio)", len(en_rcv)),
+        ("Contenedores que están ahora en WIP (aún no salen hacia DTY)", len(en_wip)),
+        ("Contenedores que ya salieron hacia DTY", sum(1 for v in viajes if v.salio_a_dty)),
+        ("Contenedores que ya salieron de RCV02 (falta que empaque libere el carro)", sum(1 for v in viajes if v.paso_por_rcv02)),
     ]
     if en_rcv:
         mas_antiguo = max(en_rcv, key=lambda v: v.horas_en_rcv)
@@ -462,15 +488,15 @@ def resumen(viajes: list[Viaje], tarimas: int = 0, anulados: int = 0, otros: int
     filas += _estadisticas("Horas en POY (de RCV01 a salir hacia DTY)", [v.horas_en_poy for v in viajes if v.horas_en_poy is not None])
 
     # Lo que sale del cruce con este sistema.
-    filas.append(("Viajes registrados en este sistema", f"{sum(1 for v in viajes if v.en_sistema)} de {len(viajes)}"))
-    filas += _estadisticas("Horas de la notificación (016) a escanear el carro", [v.horas_hasta_escanear for v in viajes if v.horas_hasta_escanear is not None])
-    filas += _estadisticas("Horas en DTY (de salir del WIP a liberar el carro)", [v.horas_en_dty for v in _liberados(viajes)])
-    filas.append(("Viajes en DTY cargados en el sistema y aún sin liberar", len(en_dty)))
+    filas.append(("Contenedores registrados en la aplicación", sum(1 for v in viajes if v.en_sistema)))
+    filas += _estadisticas("Horas de la notificación (016) a cargarlo en la aplicación", [v.horas_hasta_escanear for v in viajes if v.horas_hasta_escanear is not None])
+    filas += _estadisticas("Horas en DTY (de salir del WIP a liberarse en la aplicación)", [v.horas_en_dty for v in _liberados(viajes)])
+    filas.append(("Contenedores en DTY cargados en la aplicación y sin liberar", len(en_dty)))
     if en_dty:
         mas_antiguo = max(en_dty, key=lambda v: v.horas_en_dty)
         filas.append(("El que más lleva en DTY sin liberar", f"{mas_antiguo.carro}: {horas(mas_antiguo.horas_en_dty)} h"))
     if anulados:
-        filas.append(("Contenedores anulados con la plantilla 119 (no cuentan como viaje)", anulados))
+        filas.append(("Contenedores anulados con la plantilla 119 (no se cuentan)", anulados))
     if otros:
         filas.append(("Contenedores de carros de otros procesos (D, T, DT…), sin analizar", otros))
     if tarimas:

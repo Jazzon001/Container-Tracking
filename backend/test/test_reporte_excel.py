@@ -85,28 +85,80 @@ class TestArchivosQueNoSonDeFiar:
             leer_movimientos(excel(FILAS_BASICAS))
 
 
+def hoja(libro, nombre):
+    """Las filas de una hoja como diccionarios {encabezado: valor}, para no depender del orden de las columnas."""
+    filas = list(libro[nombre].iter_rows(values_only=True))
+    return [dict(zip(filas[0], fila)) for fila in filas[1:]]
+
+
 class TestEscribir:
     def libro(self):
         return load_workbook(BytesIO(escribir_excel(armar_reporte(leer_movimientos(excel(FILAS_BASICAS))))))
 
     def test_trae_sus_hojas(self):
-        assert self.libro().sheetnames == ["Resumen", "Por carro", "Viajes", "Anulados"]
+        assert self.libro().sheetnames == ["Resumen", "Contenedores", "Carros", "Anulados", "Cómo leer"]
 
-    def test_por_carro_deja_los_lados_juntos_y_con_su_carro_fisico(self):
-        filas = list(self.libro()["Por carro"].iter_rows(min_row=2, values_only=True))
-        assert [(f[0], f[1], f[2]) for f in filas] == [("P1", "A", "P1A"), ("P2", "B", "P2B")]
+    def test_contenedores_es_una_fila_por_contenedor_elemento(self):
+        filas = hoja(self.libro(), "Contenedores")
+        assert [f["Contenedor elemento"] for f in filas] == ["A1", "B2"]
 
-    def test_viajes_trae_las_fechas_del_recorrido(self):
-        viajes = list(self.libro()["Viajes"].iter_rows(min_row=2, values_only=True))
-        a1 = next(v for v in viajes if v[1] == "A1")
-        assert a1[3] == datetime(2026, 11, 1, 6, 30)  # notificado en RCV01 (016)
-        assert a1[17] == "RCV01 → WIPB4 → DTY"
+    def test_cada_contenedor_dice_en_que_etapa_esta(self):
+        etapas = {f["Contenedor elemento"]: f["Dónde está ahora"] for f in hoja(self.libro(), "Contenedores")}
+        assert etapas["A1"] == "3 · En DTY"
+        assert etapas["B2"] == "1 · En RCV01 (esperando a intermedio)"
 
-    def test_el_resumen_explica_como_leer_el_archivo(self):
-        textos = [str(c.value) for fila in self.libro()["Resumen"].iter_rows() for c in fila if c.value]
-        assert any("es la SALIDA de esa ubicación" in t for t in textos)
-        assert "Movimientos de producto en tarima (sin carro)" in textos
-        assert any("liberación del carro en este sistema" in t for t in textos)
+    def test_trae_las_fechas_de_cada_etapa(self):
+        a1 = next(f for f in hoja(self.libro(), "Contenedores") if f["Contenedor elemento"] == "A1")
+        assert a1["Entró a RCV01 (producción, 016)"] == datetime(2026, 11, 1, 6, 30)
+        assert a1["Salió de RCV01 (hacia WIP)"] == datetime(2026, 11, 1, 8, 30)
+        assert a1["Salió del WIP (hacia DTY)"] == datetime(2026, 11, 1, 12, 30)
+        assert a1["WIP del que salió"] == "WIPB4"
+        assert a1["Recorrido"] == "RCV01 → WIPB4 → DTY"
+
+    def test_trae_las_horas_de_cada_etapa_ya_terminada(self):
+        a1 = next(f for f in hoja(self.libro(), "Contenedores") if f["Contenedor elemento"] == "A1")
+        assert (a1["Horas en RCV01"], a1["Horas en WIP"], a1["Horas en POY (RCV01 + WIP)"]) == (2.0, 4.0, 6.0)
+
+    def test_lo_que_sigue_en_curso_no_se_mezcla_con_las_etapas_terminadas(self):
+        b2 = next(f for f in hoja(self.libro(), "Contenedores") if f["Contenedor elemento"] == "B2")
+        assert b2["Horas en RCV01"] is None and b2["Horas en WIP"] is None  # RCV01 sigue abierta
+        assert b2["Lleva ahí (horas)"] == 3.0  # de las 9:30 a las 12:30
+        assert b2["Desde"] == datetime(2026, 11, 1, 9, 30)
+
+    def test_la_calidad_va_en_letras(self):
+        assert {f["Calidad"] for f in hoja(self.libro(), "Contenedores")} == {"A"}  # las filas de prueba son calidad 2
+
+    def test_sin_registro_en_la_aplicacion_lo_dice_con_palabras(self):
+        estados = {f["Estado en la aplicación"] for f in hoja(self.libro(), "Contenedores")}
+        assert estados == {"Sin registro en este sistema"}
+
+    def test_carros_deja_los_lados_juntos_y_dice_cuantas_veces_se_cargo(self):
+        filas = hoja(self.libro(), "Carros")
+        assert [(f["Carro físico"], f["Lado"], f["Carro"]) for f in filas] == [("P1", "A", "P1A"), ("P2", "B", "P2B")]
+        assert [f["Veces cargado (en NOW)"] for f in filas] == [1, 1]
+        assert [f["Veces cargado en la aplicación"] for f in filas] == [0, 0]  # un número, no "0 de 1"
+
+    def test_no_usa_la_palabra_viaje_en_ninguna_parte(self):
+        textos = []
+        for nombre in self.libro().sheetnames:
+            for fila in self.libro()[nombre].iter_rows(values_only=True):
+                textos += [str(c) for c in fila if isinstance(c, str)]
+        assert not [t for t in textos if "viaje" in t.lower()]
+
+    def test_el_resumen_agrupa_las_horas_en_una_tabla_por_etapa(self):
+        filas = [f for f in self.libro()["Resumen"].iter_rows(values_only=True) if f[0]]
+        encabezado = next(i for i, f in enumerate(filas) if f[:4] == ("Etapa", "Promedio", "Mediana", "Máximo"))
+        etapas = [f[0] for f in filas[encabezado + 1 :] if isinstance(f[1], (int, float))]
+        assert "Horas en RCV01 hasta salir hacia WIP" in etapas
+        assert "Horas en WIP hasta salir hacia DTY" in etapas
+
+    def test_el_resumen_lista_los_que_mas_llevan_esperando(self):
+        textos = [str(f[0]) for f in self.libro()["Resumen"].iter_rows(values_only=True) if f[0]]
+        assert any(t.startswith("Los 10 que más llevan en RCV01") for t in textos)
+
+    def test_como_leer_explica_las_etapas_y_la_plantilla_de_nowa(self):
+        temas = [f[0] for f in self.libro()["Cómo leer"].iter_rows(min_row=2, values_only=True)]
+        assert {"Qué es una fila", "Etapas", "Horas en DTY", "Cómo se lee NOW", "Anulados"} <= set(temas)
 
 
 class TestAnulados:
@@ -125,25 +177,22 @@ class TestAnulados:
         assert next(m for m in movimientos if m.plantilla == "119").es_anulacion
 
     def test_la_hoja_anulados_lista_los_contenedores_anulados(self):
-        filas = list(self.libro()["Anulados"].iter_rows(min_row=2, values_only=True))
-        assert len(filas) == 1
-        carro, contenedor, ubicacion, notificado, anulado, horas_hasta = filas[0]
-        assert (carro, contenedor, ubicacion) == ("P3A", "E1", "RCV01")
-        assert notificado == datetime(2026, 11, 1, 7, 30) and anulado == datetime(2026, 11, 1, 8, 45)
-        assert horas_hasta == 1.2  # 1 h 15 min
+        [anulado] = hoja(self.libro(), "Anulados")
+        assert (anulado["Carro"], anulado["Contenedor elemento"], anulado["Ubicación"]) == ("P3A", "E1", "RCV01")
+        assert anulado["Notificado (016)"] == datetime(2026, 11, 1, 7, 30)
+        assert anulado["Anulado el (119)"] == datetime(2026, 11, 1, 8, 45)
+        assert anulado["Horas hasta anularlo"] == 1.2  # 1 h 15 min
 
-    def test_el_anulado_y_el_de_otro_proceso_no_estan_entre_los_viajes_ni_los_carros(self):
+    def test_el_anulado_y_el_de_otro_proceso_no_estan_entre_los_contenedores_ni_los_carros(self):
         libro = self.libro()
-        viajes = [f[1] for f in libro["Viajes"].iter_rows(min_row=2, values_only=True)]
-        assert "E1" not in viajes and "D1" not in viajes
-        carros = [f[2] for f in libro["Por carro"].iter_rows(min_row=2, values_only=True)]
-        assert carros == ["P1A", "P2B"]
+        assert [f["Contenedor elemento"] for f in hoja(libro, "Contenedores")] == ["A1", "B2"]
+        assert [f["Carro"] for f in hoja(libro, "Carros")] == ["P1A", "P2B"]
 
     def test_el_resumen_cuenta_los_anulados_y_los_de_otros_procesos(self):
         resumen = {f[0]: f[1] for f in self.libro()["Resumen"].iter_rows(values_only=True) if f[0]}
-        assert resumen["Contenedores anulados con la plantilla 119 (no cuentan como viaje)"] == 1
+        assert resumen["Contenedores anulados con la plantilla 119 (no se cuentan)"] == 1
         assert resumen["Contenedores de carros de otros procesos (D, T, DT…), sin analizar"] == 1
 
     def test_sin_anulados_la_hoja_existe_vacia(self):
         libro = load_workbook(BytesIO(escribir_excel(armar_reporte(leer_movimientos(excel(FILAS_BASICAS))))))
-        assert list(libro["Anulados"].iter_rows(min_row=2, values_only=True)) == []
+        assert hoja(libro, "Anulados") == []
