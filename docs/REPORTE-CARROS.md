@@ -43,12 +43,17 @@ Un **viaje** es la vida de un contenedor elemento. Un mismo carro hace muchos vi
 
 ## Qué trae el Excel del reporte
 
+Está pensado para leerse sin explicación: **cada fila es un contenedor elemento** (cada vez que se carga un carro), con la etapa en que está y las horas que pasó en cada una. En el Excel no se usa la palabra "viaje".
+
 | Hoja | Qué muestra |
 |---|---|
-| **Resumen** | Carros y viajes; cuántos siguen en `RCV01`, cuántos en WIP y cuántos ya salieron hacia DTY (con el que más lleva en cada etapa); promedio, mediana y máximo de horas en `RCV01`, en WIP y en POY; y las horas por WIP de salida y por calidad. |
-| **Por carro** | Una fila por carro: viajes, último contenedor elemento, calidad, situación actual ("En RCV01…", "En WIP…" o "En DTY (salió de WIPB1)"), horas en esa situación y horas promedio en `RCV01` y en WIP. |
-| **Anulados** | Los contenedores elemento anulados con la plantilla `119` (carro, cuándo se notificó, cuándo se anuló y cuánto tardó el operador en corregirlo). |
-| **Viajes** | Una fila por contenedor elemento: cuándo se notificó (`016`), cuándo salió de recepción y de WIP, horas en cada etapa, situación y todo su recorrido. |
+| **Resumen** | Cuántos contenedores hay y dónde están ahora; una tabla con las horas promedio, mediana y máximo de cada etapa; **los 10 que más llevan esperando** en RCV01, en WIP y en DTY sin liberarse; y las horas por WIP de salida y por calidad. |
+| **Contenedores** | **La hoja principal.** Una fila por contenedor elemento: carro, lado, calidad, **dónde está ahora** (`1 · En RCV01`, `2 · En WIP`, `3 · En DTY` o `4 · Salió de RCV02`), desde cuándo y **cuántas horas lleva ahí**; después, la fecha de cada etapa (entró a RCV01, salió de RCV01, salió del WIP) y las **horas en RCV01, en WIP y en POY**; y lo que registró la aplicación (cuándo se cargó, cuándo se liberó, horas en DTY). |
+| **Carros** | Una fila por lado de carro: cuántas veces se cargó (en NOW y en la aplicación), dónde está su último contenedor y los promedios de horas. |
+| **Anulados** | Los contenedores anulados con la plantilla `119` (carro, cuándo se notificó, cuándo se anuló y cuánto tardó el operador en corregirlo). |
+| **Cómo leer** | Una explicación corta de cada columna y de cómo se lee NOW. |
+
+Las horas de una etapa solo se llenan cuando la etapa **ya terminó**. Lo que sigue en curso se ve en *Lleva ahí (horas)*. Así, un promedio nunca mezcla duraciones finales con esperas que siguen abiertas.
 
 ## Reglas que conviene conocer
 

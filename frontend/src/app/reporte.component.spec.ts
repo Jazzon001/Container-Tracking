@@ -136,11 +136,9 @@ describe('ReporteComponent', () => {
     expect(primera).toContain('P056A');
     expect(primera).toContain('En DTY (salió de WIPB4)');
     expect(primera).toContain('Liberado en el sistema');
-    expect(primera).toContain('(1 de 2 viajes)');
     expect(primera).toContain('8 h');
     expect(segunda).toContain('9.1 h (sin liberar)');
     expect(tercera).toContain('Sin registro en este sistema');
-    expect(tercera).not.toContain('viajes)');
     expect(tercera).toContain('—');
   });
 
