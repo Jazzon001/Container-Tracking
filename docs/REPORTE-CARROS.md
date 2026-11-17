@@ -10,7 +10,7 @@ Entra a **Reporte**, elige el Excel de NOW y pulsa **Generar reporte**. Verás e
 
 ### Con el script, sin la aplicación
 
-1. En NOW, exporta los movimientos de stock a Excel (la consulta *Stock transaction Inquiry*) con **las plantillas `016` y `202`**, tipo de artículo `PPY` y el almacén lógico `WH103`. Debe traer las columnas `Transaction date`, `Transaction time`, `Location`, `Cnr` (el carro), `Container element` y `Tmp` (la plantilla); la calidad (`Qlt`) es opcional.
+1. En NOW, exporta los movimientos de stock a Excel (la consulta *Stock transaction Inquiry*) con **las plantillas `016`, `202` y `119`**, tipo de artículo `PPY` y el almacén lógico `WH103`. Si exportas sin el filtro de tipo de artículo, el archivo trae también carros de otros procesos (`D…`, `T…`, `DT…`): el reporte los cuenta aparte y no los analiza. Debe traer las columnas `Transaction date`, `Transaction time`, `Location`, `Cnr` (el carro), `Container element` y `Tmp` (la plantilla); la calidad (`Qlt`) es opcional.
 2. Copia el archivo a `datos/movimientos_now.xlsx`. La carpeta `datos/` no se sube a GitHub.
 3. Desde `backend`, con el entorno virtual activo:
 
@@ -25,6 +25,7 @@ Escribe `datos/reporte_carros.xlsx`. El script no recibe rutas por argumentos: s
 | Plantilla y ubicación | Significa |
 |---|---|
 | `016` en `RCV01` | **Entrada**: el ERP registra la producción y deja el carro puesto en `RCV01`. Se genera el contenedor elemento, el código de barras que se escanea en este sistema para registrar el carro como cargado. |
+| `119` | **Anulación** de una notificación: la negativa de la `016`, cuando el operador se equivocó al registrar el carro. Ese contenedor elemento **no cuenta como viaje** y se lista en la hoja *Anulados*. |
 | `202` en `RCV01` | **Salida** de recepción hacia un WIP (la hace el equipo de intermedio). |
 | `202` en `WIPxx` | **Salida** de ese WIP, siempre hacia **DTY**, donde se deja de rastrear el carro. |
 | `202` en `RCV02` | Salida de la **última localización antes de que empaque libere el carro**: ahí llegan los carros con producto POY de **grado B que sale del proceso de DTY**. No tiene `016`; el viaje ya había salido de su WIP hacia DTY. |
@@ -46,9 +47,13 @@ Un **viaje** es la vida de un contenedor elemento. Un mismo carro hace muchos vi
 |---|---|
 | **Resumen** | Carros y viajes; cuántos siguen en `RCV01`, cuántos en WIP y cuántos ya salieron hacia DTY (con el que más lleva en cada etapa); promedio, mediana y máximo de horas en `RCV01`, en WIP y en POY; y las horas por WIP de salida y por calidad. |
 | **Por carro** | Una fila por carro: viajes, último contenedor elemento, calidad, situación actual ("En RCV01…", "En WIP…" o "En DTY (salió de WIPB1)"), horas en esa situación y horas promedio en `RCV01` y en WIP. |
+| **Anulados** | Los contenedores elemento anulados con la plantilla `119` (carro, cuándo se notificó, cuándo se anuló y cuánto tardó el operador en corregirlo). |
 | **Viajes** | Una fila por contenedor elemento: cuándo se notificó (`016`), cuándo salió de recepción y de WIP, horas en cada etapa, situación y todo su recorrido. |
 
 ## Reglas que conviene conocer
+
+- **Solo se analiza el flujo de POY:** los carros cuyo código empieza con `P` (`P056A`). Los de otros procesos (`D064`, `T020`, `DT07`…) tienen otro flujo, con ubicaciones como `WIPE` y `K01`, que este reporte todavía no modela: se cuentan en el Resumen y no entran en ninguna tabla ni promedio.
+- **Un contenedor con una `119` no es un viaje**, aunque tenga otras filas. Una `119` cuya `016` fue anterior al archivo también lo excluye.
 
 - Lo que sigue abierto (en `RCV01` o en WIP) se mide hasta el **último movimiento del archivo**, que es la fecha que dice el Resumen, y **no entra en los promedios**: no es una duración final.
 - Si de un contenedor no se ve su `016`, se notificó antes del rango del archivo: no se calculan sus horas en `RCV01`. Para tener más viajes completos, exporta desde una fecha anterior.

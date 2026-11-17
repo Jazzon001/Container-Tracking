@@ -21,6 +21,11 @@ El módulo 3 del proyecto pide un reporte del tiempo que cada contenedor element
 10. **Pantalla `Reporte`** (solo administrador): elige el Excel, genera el reporte (resumen, tablas por WIP y calidad, y una tabla por carro con búsqueda) y lo descarga como Excel. La ruta `/reporte` se agregó a las reglas de `vercel.json` como las demás pantallas privadas (sin sesión redirige al login) y a `robots.txt`.
 11. **No se tocó ninguna cabecera de seguridad** ni la política de contenido: la descarga se hace con una dirección `blob:` creada en el navegador.
 
+## Ajustes posteriores
+
+- **Plantilla `119`** (anulación de una notificación, la negativa de la `016`): el contenedor elemento con una `119` no cuenta como viaje y se lista en la hoja *Anulados*.
+- **Solo el flujo de POY:** al quitar el filtro de tipo de artículo de la exportación entran carros `D`, `T` y `DT` con otro flujo (`016` en `WIPE` y `K01`). Se cuentan aparte y no se analizan hasta modelar su flujo; mezclarlos habría marcado cientos de contenedores como "esperando en RCV01" sin ser cierto.
+
 ## Alternativas consideradas
 
 | Alternativa | Por qué se descartó |
