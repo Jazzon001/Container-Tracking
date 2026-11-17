@@ -48,7 +48,7 @@ Está pensado para leerse sin explicación: **cada fila es un contenedor element
 | Hoja | Qué muestra |
 |---|---|
 | **Resumen** | Cuántos contenedores hay y dónde están ahora; una tabla con las horas promedio, mediana y máximo de cada etapa; **los 10 que más llevan esperando** en RCV01, en WIP y en DTY sin liberarse; y las horas por WIP de salida y por calidad. |
-| **Contenedores** | **La hoja principal.** Una fila por contenedor elemento: carro, lado, calidad, **dónde está ahora** (`1 · En RCV01`, `2 · En WIP`, `3 · En DTY` o `4 · Salió de RCV02`), desde cuándo y **cuántas horas lleva ahí**; después, la fecha de cada etapa (entró a RCV01, salió de RCV01, salió del WIP) y las **horas en RCV01, en WIP y en POY**; y lo que registró la aplicación (cuándo se cargó, cuándo se liberó, horas en DTY). |
+| **Contenedores** | **La hoja principal.** Una fila por contenedor elemento: carro, lado, calidad, **dónde está ahora** (`1 · En RCV01`, `2 · En WIP`, `3 · En DTY`, `4 · Salió de RCV02` o `5 · En POY`, cuando ya se liberó en la aplicación y el carro está disponible), desde cuándo y **cuántas horas lleva ahí**; después, la fecha de cada etapa (entró a RCV01, salió de RCV01, salió del WIP) y las **horas en RCV01, en WIP y en POY**; y lo que registró la aplicación (cuándo se cargó, cuándo se liberó, horas en DTY). |
 | **Carros** | Una fila por lado de carro: cuántas veces se cargó (en NOW y en la aplicación), dónde está su último contenedor y los promedios de horas. |
 | **Anulados** | Los contenedores anulados con la plantilla `119` (carro, cuándo se notificó, cuándo se anuló y cuánto tardó el operador en corregirlo). |
 | **Cómo leer** | Una explicación corta de cada columna y de cómo se lee NOW. |

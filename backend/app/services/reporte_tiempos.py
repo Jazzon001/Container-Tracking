@@ -40,6 +40,7 @@ LADOS = ("A", "B")
 # La calidad (Qlt de NOW): 1 es AA, 2 es A y 3 es B. Empaque la empaca como A, o calidad la revisa y
 # la deja como 3 (B), si aplica.
 CALIDADES = {1: "AA", 2: "A", 3: "B"}
+ETAPA_EN_POY = "5 · En POY (liberado en la aplicación, disponible)"  # lo libera intermedio o empaque con el contenedor elemento
 PLANTILLA_ENTRADA = "016"  # producción: deja el carro en RCV01
 PLANTILLA_TRANSFERENCIA = "202"  # salida de la ubicación de la fila
 PLANTILLA_ANULACION = "119"  # anula una notificación: la negativa de la 016
@@ -103,7 +104,8 @@ class Viaje:
     ultimo_movimiento: datetime
     desde_ultimo_movimiento: timedelta
     situacion: str
-    etapa: str  # en qué punto está, en palabras: "1 · En RCV01…", "2 · En WIP…", "3 · En DTY"
+    etapa: str  # en qué punto está, en palabras: "1 · En RCV01…", "2 · En WIP…", "3 · En DTY"…
+    etapa_desde: datetime  # cuándo entró a esa etapa
     # Lo que sigue viene del cruce con este sistema. Las horas están en la hora de NOW.
     en_sistema: bool = False
     cargada_en: datetime | None = None  # cuándo se escaneó el contenedor elemento en este sistema
@@ -161,6 +163,7 @@ class FilaCarro:
     # Lo del sistema sale del último viaje del carro que SÍ tiene registro aquí, que no siempre es el último de NOW.
     situacion_sistema: str
     viajes_en_sistema: int  # cuántos de sus viajes tienen registro en este sistema
+    contenedor_en_sistema: str | None  # el último contenedor del carro que sí tiene registro aquí
     horas_en_dty: timedelta | None
     dty_abierto: bool
     horas_promedio_en_dty: timedelta | None  # de los viajes ya liberados
@@ -342,6 +345,7 @@ def _viaje(lista: list[Movimiento], corte: datetime) -> Viaje:
         desde_ultimo_movimiento=corte - lista[-1].instante,
         situacion=_situacion(salidas),
         etapa=_etapa(salidas),
+        etapa_desde=lista[-1].instante,
     )
 
 
@@ -379,17 +383,24 @@ def cruzar_con_registros(
             if fin >= viaje.salio_a_dty_en:  # una liberación anterior a la salida no tiene sentido
                 horas_en_dty, abierto = fin - viaje.salio_a_dty_en, recibida is None
 
-        cruzados.append(
-            replace(
-                viaje,
-                en_sistema=True,
-                cargada_en=cargada,
-                recibida_en=recibida,
-                horas_hasta_escanear=hasta_escanear,
-                horas_en_dty=horas_en_dty,
-                dty_abierto=abierto,
-            )
+        cruce = replace(
+            viaje,
+            en_sistema=True,
+            cargada_en=cargada,
+            recibida_en=recibida,
+            horas_hasta_escanear=hasta_escanear,
+            horas_en_dty=horas_en_dty,
+            dty_abierto=abierto,
         )
+        if recibida is not None:
+            # Ya se liberó: el carro está disponible para POY, aunque NOW siga mostrando su última salida.
+            cruce = replace(
+                cruce,
+                etapa=ETAPA_EN_POY,
+                etapa_desde=recibida,
+                desde_ultimo_movimiento=max(timedelta(0), corte - recibida),
+            )
+        cruzados.append(cruce)
     return cruzados
 
 
@@ -435,6 +446,7 @@ def por_carro(viajes: list[Viaje]) -> list[FilaCarro]:
                 horas_promedio_en_wip=_promedio([v.horas_en_wip for v in lista if v.salio_a_dty and v.horas_en_wip is not None]),
                 situacion_sistema=ultimo_registrado.situacion_sistema,
                 viajes_en_sistema=len(registrados),
+                contenedor_en_sistema=ultimo_registrado.contenedor if registrados else None,
                 horas_en_dty=ultimo_registrado.horas_en_dty,
                 dty_abierto=ultimo_registrado.dty_abierto,
                 horas_promedio_en_dty=_promedio([v.horas_en_dty for v in _liberados(lista)]),
@@ -489,6 +501,7 @@ def resumen(viajes: list[Viaje], tarimas: int = 0, anulados: int = 0, otros: int
 
     # Lo que sale del cruce con este sistema.
     filas.append(("Contenedores registrados en la aplicación", sum(1 for v in viajes if v.en_sistema)))
+    filas.append(("Contenedores ya liberados en la aplicación (disponibles en POY)", sum(1 for v in viajes if v.recibida_en is not None)))
     filas += _estadisticas("Horas de la notificación (016) a cargarlo en la aplicación", [v.horas_hasta_escanear for v in viajes if v.horas_hasta_escanear is not None])
     filas += _estadisticas("Horas en DTY (de salir del WIP a liberarse en la aplicación)", [v.horas_en_dty for v in _liberados(viajes)])
     filas.append(("Contenedores en DTY cargados en la aplicación y sin liberar", len(en_dty)))

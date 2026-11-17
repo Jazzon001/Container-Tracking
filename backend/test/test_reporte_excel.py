@@ -10,7 +10,9 @@ from openpyxl import Workbook, load_workbook
 from app.errores import ArchivoInvalido
 from app.services import reporte_excel
 from app.services.reporte_excel import escribir_excel, leer_movimientos
-from app.services.reporte_tiempos import armar_reporte
+from datetime import timedelta
+
+from app.services.reporte_tiempos import Registro, armar_reporte
 
 
 class TestLeer:
@@ -196,3 +198,38 @@ class TestAnulados:
     def test_sin_anulados_la_hoja_existe_vacia(self):
         libro = load_workbook(BytesIO(escribir_excel(armar_reporte(leer_movimientos(excel(FILAS_BASICAS))))))
         assert hoja(libro, "Anulados") == []
+
+
+class TestContenedorLiberado:
+    """Un contenedor liberado en la aplicación ya no está en DTY: el carro está disponible en POY."""
+
+    def libro(self):
+        # A1 salió del WIP hacia DTY el 1 a las 12:30 (hora de NOW) y se liberó en la aplicación a las 20:30 de ese día.
+        registros = {"A1": Registro(datetime(2026, 11, 1, 20, 30) + timedelta(hours=6), datetime(2026, 11, 2, 2, 30) + timedelta(hours=6))}
+        reporte = armar_reporte(leer_movimientos(excel(FILAS_BASICAS)), registros, -6)
+        return load_workbook(BytesIO(escribir_excel(reporte)))
+
+    def test_dice_que_esta_en_poy(self):
+        a1 = next(f for f in hoja(self.libro(), "Contenedores") if f["Contenedor elemento"] == "A1")
+        assert a1["Dónde está ahora"].startswith("5 · En POY")
+        assert a1["Desde"] == datetime(2026, 11, 2, 2, 30)
+        assert a1["Estado en la aplicación"] == "Liberado en el sistema"
+
+    def test_conserva_lo_que_paso_en_now(self):
+        a1 = next(f for f in hoja(self.libro(), "Contenedores") if f["Contenedor elemento"] == "A1")
+        assert a1["Salió del WIP (hacia DTY)"] == datetime(2026, 11, 1, 12, 30)
+        assert a1["Recorrido"] == "RCV01 → WIPB4 → DTY"
+        assert a1["Horas en DTY (hasta liberarse)"] == 14.0  # de las 12:30 del día 1 a las 2:30 del día 2
+
+    def test_carros_dice_cual_es_el_contenedor_de_la_aplicacion_y_su_estado(self):
+        p1 = next(f for f in hoja(self.libro(), "Carros") if f["Carro"] == "P1A")
+        assert p1["Último contenedor cargado en la aplicación"] == "A1"
+        assert p1["Su estado en la aplicación"] == "Liberado en el sistema"
+
+    def test_el_carro_tambien_aparece_en_poy_en_la_hoja_carros(self):
+        p1 = next(f for f in hoja(self.libro(), "Carros") if f["Carro"] == "P1A")
+        assert p1["Dónde está ahora"].startswith("5 · En POY")
+
+    def test_como_leer_explica_la_etapa_5(self):
+        textos = [str(f[1]) for f in self.libro()["Cómo leer"].iter_rows(min_row=2, values_only=True)]
+        assert any("5 · En POY" in t for t in textos)

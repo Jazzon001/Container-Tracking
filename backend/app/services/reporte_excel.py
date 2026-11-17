@@ -181,7 +181,7 @@ def _los_que_mas_llevan(hoja, titulo: str, viajes: list[Viaje], horas_de) -> Non
     hoja.append(["Carro", "Contenedor elemento", "Horas ahí", "Desde"])
     _negrita(hoja, hoja.max_row)
     for v in elegidos:
-        hoja.append([v.carro, v.contenedor, horas(horas_de(v)), v.ultimo_movimiento])
+        hoja.append([v.carro, v.contenedor, horas(horas_de(v)), v.etapa_desde])
         hoja.cell(row=hoja.max_row, column=4).number_format = FORMATO_FECHA
 
 
@@ -236,7 +236,7 @@ def _hoja_contenedores(libro: Workbook, viajes: list[Viaje]) -> None:
          "Cargado en la aplicación", "Liberado en la aplicación", "Horas hasta cargarlo en la aplicación", "Horas en DTY (hasta liberarse)",
          "Estado en la aplicación", "Recorrido"],
         [[v.carro, v.carro_fisico, v.lado, v.contenedor, _calidad_en_letras(v.calidad),
-          v.etapa, v.ultimo_movimiento, horas(v.desde_ultimo_movimiento),
+          v.etapa, v.etapa_desde, horas(v.desde_ultimo_movimiento),
           v.notificado_en, v.salio_de_recepcion_en, v.salio_a_dty_en, v.wip_de_salida,
           # Las duraciones solo se llenan cuando la etapa ya terminó; lo que sigue en curso está en "Lleva ahí".
           horas(None if v.sigue_en_rcv else v.horas_en_rcv),
@@ -257,13 +257,13 @@ def _hoja_carros(libro: Workbook, reporte: Reporte) -> None:
         "Carros",
         ["Carro físico", "Lado", "Carro", "Veces cargado (en NOW)", "Último contenedor elemento", "Calidad",
          "Dónde está ahora", "Lleva ahí (horas)", "Promedio de horas en RCV01", "Promedio de horas en WIP",
-         "Veces cargado en la aplicación", "Último estado en la aplicación", "Horas en DTY (ese contenedor)", "Promedio de horas en DTY"],
+         "Veces cargado en la aplicación", "Último contenedor cargado en la aplicación", "Su estado en la aplicación", "Horas en DTY (de ese contenedor)", "Promedio de horas en DTY"],
         [[c.carro_fisico, c.lado, c.carro, c.viajes, c.ultimo_contenedor, _calidad_en_letras(c.calidad),
           c.etapa, horas(c.desde_ultimo_movimiento), horas(c.horas_promedio_en_rcv), horas(c.horas_promedio_en_wip),
-          c.viajes_en_sistema, c.situacion_sistema,
+          c.viajes_en_sistema, c.contenedor_en_sistema, c.situacion_sistema,
           horas(None if c.dty_abierto else c.horas_en_dty), horas(c.horas_promedio_en_dty)]
          for c in reporte.carros],
-        [11, 6, 9, 14, 24, 9, 40, 12, 14, 14, 16, 34, 16, 14],
+        [11, 6, 9, 14, 24, 9, 40, 12, 14, 14, 16, 24, 34, 16, 14],
     )
 
 
@@ -283,7 +283,7 @@ def _hoja_anulados(libro: Workbook, reporte: Reporte) -> None:
 COMO_LEER = (
     ("Qué es una fila", "Cada fila de la hoja Contenedores es un contenedor elemento: el código de barras que se genera cada vez que se carga un carro. Un mismo carro aparece en varias filas, una por cada vez que se cargó."),
     ("Carros y lados", "Un carro se parte siempre en un lado A y un lado B (P056A y P056B): cada lado tiene su propio contenedor elemento. La columna Carro físico (P056) los junta."),
-    ("Etapas", "1 · En RCV01: se notificó y espera a que intermedio lo mueva.  2 · En WIP: intermedio ya lo movió y falta que salga hacia DTY.  3 · En DTY: salió del WIP (NOW deja de rastrearlo).  4 · Salió de RCV02: volvió de DTY y falta que empaque libere el carro."),
+    ("Etapas", "1 · En RCV01: se notificó y espera a que intermedio lo mueva.  2 · En WIP: intermedio ya lo movió y falta que salga hacia DTY.  3 · En DTY: salió del WIP (NOW deja de rastrearlo).  4 · Salió de RCV02: volvió de DTY y falta que empaque libere el carro.  5 · En POY: ya se liberó en la aplicación con su contenedor elemento y el carro está disponible para POY."),
     ("Desde y Lleva ahí", "Desde es el momento en que entró a la etapa actual y Lleva ahí son las horas que lleva en ella, medidas hasta el último movimiento del archivo."),
     ("Horas en RCV01, WIP y POY", "Solo se llenan cuando la etapa ya terminó. Horas en POY es la suma de RCV01 y WIP. Si el contenedor se notificó antes del rango del archivo, no se puede medir RCV01."),
     ("Horas en DTY", "Van de la salida del WIP en NOW a que intermedio o empaque libere el carro en la aplicación con su contenedor elemento. Solo existen si el carro se cargó y se liberó en la aplicación."),

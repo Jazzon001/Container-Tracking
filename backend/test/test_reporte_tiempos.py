@@ -6,6 +6,7 @@ es una transferencia (cada fila es la SALIDA de esa ubicación: de RCV01 hacia u
 from datetime import datetime, timedelta
 
 from app.services.reporte_tiempos import (
+    ETAPA_EN_POY,
     Movimiento,
     Registro,
     agrupar_viajes,
@@ -440,11 +441,56 @@ class TestCruceConElSistema:
         assert p1.viajes_en_sistema == 1 and p1.viajes == 2
         assert p1.horas_en_dty == timedelta(hours=8) and not p1.dty_abierto
 
+    def test_dice_cual_es_el_contenedor_registrado_de_cada_carro(self):
+        filas = {f.carro: f for f in por_carro(list(self.cruzados().values()))}
+        assert filas["P1"].contenedor_en_sistema == "D4"  # el último de sus contenedores que sí se cargó en la aplicación
+        assert filas["P3"].contenedor_en_sistema is None
+
+    def test_si_el_ultimo_contenedor_no_esta_registrado_se_nombra_el_que_si(self):
+        registros = {"A1": self.registros()["A1"]}
+        viajes = cruzar_con_registros(agrupar_viajes(MOVIMIENTOS, CORTE), registros, self.DESPLAZAMIENTO, CORTE)
+        p1 = next(f for f in por_carro(viajes) if f.carro == "P1")
+        assert p1.ultimo_contenedor == "D4" and p1.contenedor_en_sistema == "A1"
+
     def test_cuenta_los_viajes_registrados_de_cada_carro(self):
         filas = {f.carro: f for f in por_carro(list(self.cruzados().values()))}
         assert filas["P1"].viajes_en_sistema == 2  # A1 y D4
         assert filas["P2"].viajes_en_sistema == 1
         assert filas["P3"].viajes_en_sistema == 0
+
+    def test_un_contenedor_liberado_en_la_aplicacion_esta_en_poy_y_no_en_dty(self):
+        a1 = self.cruzados()["A1"]  # salió hacia DTY a las 12 y se liberó a las 20
+        assert a1.etapa == ETAPA_EN_POY
+        assert a1.etapa.startswith("5 · En POY")
+        assert a1.etapa_desde == datetime(2026, 11, 1, 20)
+
+    def test_las_horas_que_lleva_en_poy_corren_desde_la_liberacion(self):
+        a1 = self.cruzados()["A1"]
+        assert a1.desde_ultimo_movimiento == CORTE - datetime(2026, 11, 1, 20)
+
+    def test_si_se_libero_despues_del_corte_las_horas_no_son_negativas(self):
+        registros = {"A1": Registro(self.utc(3, 9), self.utc(3, 10))}  # liberado el día 3, después del corte (día 2 a las 18)
+        viajes = cruzar_con_registros(agrupar_viajes(MOVIMIENTOS, CORTE), registros, self.DESPLAZAMIENTO, CORTE)
+        a1 = next(v for v in viajes if v.contenedor == "A1")
+        assert a1.etapa == ETAPA_EN_POY and a1.desde_ultimo_movimiento == timedelta(0)
+
+    def test_si_aun_no_se_libera_sigue_la_etapa_de_now(self):
+        assert self.cruzados()["D4"].etapa == "3 · En DTY"  # cargado en la aplicación, sin liberar
+        assert self.cruzados()["B2"].etapa.startswith("1 · En RCV01")
+        assert self.cruzados()["C3"].etapa == "3 · En DTY"  # sin registro en la aplicación
+
+    def test_liberar_no_cambia_lo_que_dice_now(self):
+        a1 = self.cruzados()["A1"]
+        assert a1.situacion == "En DTY (salió de WIPB4)"  # la situación de NOW sigue siendo la de NOW
+        assert a1.salio_a_dty_en == datetime(2026, 11, 1, 12)
+
+    def test_el_carro_muestra_la_etapa_de_su_ultimo_contenedor(self):
+        viajes = cruzar_con_registros(agrupar_viajes(MOVIMIENTOS, CORTE), {"D4": Registro(self.utc(2, 5), self.utc(2, 12))}, self.DESPLAZAMIENTO, CORTE)
+        p1 = next(f for f in por_carro(viajes) if f.carro == "P1")  # su último contenedor es D4, ya liberado
+        assert p1.etapa == ETAPA_EN_POY
+
+    def test_el_resumen_cuenta_los_liberados(self):
+        assert dict(resumen(list(self.cruzados().values())))["Contenedores ya liberados en la aplicación (disponibles en POY)"] == 1
 
     def test_el_resumen_trae_lo_del_cruce(self):
         datos = dict(resumen(list(self.cruzados().values())))
