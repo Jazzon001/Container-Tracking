@@ -349,6 +349,35 @@ def _viaje(lista: list[Movimiento], corte: datetime) -> Viaje:
     )
 
 
+def _horas_hasta_escanear(notificado_en: datetime | None, cargada: datetime) -> timedelta | None:
+    """Lo que tardó en cargarse en el sistema desde que NOW notificó el contenedor."""
+    if notificado_en is None or cargada < notificado_en:
+        return None
+    return cargada - notificado_en
+
+
+def _espera_en_dty(
+    salio_a_dty_en: datetime | None, recibida: datetime | None, corte: datetime
+) -> tuple[timedelta | None, bool]:
+    """Cuánto lleva o llevó el carro en DTY, y si la espera sigue abierta (aún no se libera)."""
+    if salio_a_dty_en is None:
+        return None, False
+    fin = recibida or corte
+    if fin < salio_a_dty_en:  # una liberación anterior a la salida no tiene sentido
+        return None, False
+    return fin - salio_a_dty_en, recibida is None
+
+
+def _disponible_en_poy(viaje: Viaje, recibida: datetime, corte: datetime) -> Viaje:
+    """Ya se liberó: el carro está disponible para POY, aunque NOW siga mostrando su última salida."""
+    return replace(
+        viaje,
+        etapa=ETAPA_EN_POY,
+        etapa_desde=recibida,
+        desde_ultimo_movimiento=max(timedelta(0), corte - recibida),
+    )
+
+
 def cruzar_con_registros(
     viajes: list[Viaje],
     registros: dict[str, Registro],
@@ -372,35 +401,18 @@ def cruzar_con_registros(
 
         cargada = a_hora_de_now(registro.cargada_en)
         recibida = a_hora_de_now(registro.recibida_en) if registro.recibida_en else None
-
-        hasta_escanear = None
-        if viaje.notificado_en is not None and cargada >= viaje.notificado_en:
-            hasta_escanear = cargada - viaje.notificado_en
-
-        horas_en_dty, abierto = None, False
-        if viaje.salio_a_dty_en is not None:
-            fin = recibida or corte
-            if fin >= viaje.salio_a_dty_en:  # una liberación anterior a la salida no tiene sentido
-                horas_en_dty, abierto = fin - viaje.salio_a_dty_en, recibida is None
+        horas_en_dty, abierto = _espera_en_dty(viaje.salio_a_dty_en, recibida, corte)
 
         cruce = replace(
             viaje,
             en_sistema=True,
             cargada_en=cargada,
             recibida_en=recibida,
-            horas_hasta_escanear=hasta_escanear,
+            horas_hasta_escanear=_horas_hasta_escanear(viaje.notificado_en, cargada),
             horas_en_dty=horas_en_dty,
             dty_abierto=abierto,
         )
-        if recibida is not None:
-            # Ya se liberó: el carro está disponible para POY, aunque NOW siga mostrando su última salida.
-            cruce = replace(
-                cruce,
-                etapa=ETAPA_EN_POY,
-                etapa_desde=recibida,
-                desde_ultimo_movimiento=max(timedelta(0), corte - recibida),
-            )
-        cruzados.append(cruce)
+        cruzados.append(_disponible_en_poy(cruce, recibida, corte) if recibida is not None else cruce)
     return cruzados
 
 
