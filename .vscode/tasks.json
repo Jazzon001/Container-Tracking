@@ -1,0 +1,106 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "API (backend)",
+      "detail": "Servidor FastAPI en http://127.0.0.1:8000 (con recarga automática)",
+      "type": "process",
+      "command": "${workspaceFolder}\\backend\\.venv\\Scripts\\python.exe",
+      "args": ["-m", "uvicorn", "app.main:app", "--reload", "--env-file", ".env"],
+      "options": { "cwd": "${workspaceFolder}/backend" },
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": { "panel": "dedicated", "group": "servidores" }
+    },
+    {
+      "label": "Frontend (Angular)",
+      "detail": "Aplicación web en http://localhost:4200",
+      "type": "shell",
+      "command": "npm start",
+      "options": { "cwd": "${workspaceFolder}/frontend" },
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": { "panel": "dedicated", "group": "servidores" }
+    },
+    {
+      "label": "Iniciar todo",
+      "detail": "Enciende la API y el frontend a la vez (Ctrl+Shift+B)",
+      "dependsOn": ["API (backend)", "Frontend (Angular)"],
+      "dependsOrder": "parallel",
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": []
+    },
+    {
+      "label": "Pruebas del backend",
+      "type": "process",
+      "command": "${workspaceFolder}\\backend\\.venv\\Scripts\\python.exe",
+      "args": ["-m", "pytest", "--cov=app", "--cov-report=term-missing"],
+      "options": { "cwd": "${workspaceFolder}/backend" },
+      "group": "test",
+      "problemMatcher": [],
+      "presentation": { "panel": "dedicated", "group": "pruebas" }
+    },
+    {
+      "label": "Pruebas del frontend",
+      "type": "shell",
+      "command": "npx ng test --no-watch",
+      "options": { "cwd": "${workspaceFolder}/frontend" },
+      "group": "test",
+      "problemMatcher": [],
+      "presentation": { "panel": "dedicated", "group": "pruebas" }
+    },
+    {
+      "label": "Todas las pruebas",
+      "detail": "Corre las pruebas del backend y del frontend",
+      "dependsOn": ["Pruebas del backend", "Pruebas del frontend"],
+      "dependsOrder": "sequence",
+      "group": { "kind": "test", "isDefault": true },
+      "problemMatcher": []
+    },
+    {
+      "label": "Instalar dependencias del backend",
+      "type": "process",
+      "command": "${workspaceFolder}\\backend\\.venv\\Scripts\\python.exe",
+      "args": ["-m", "pip", "install", "-r", "requirements-dev.txt"],
+      "options": { "cwd": "${workspaceFolder}/backend" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Instalar dependencias del frontend",
+      "type": "shell",
+      "command": "npm install",
+      "options": { "cwd": "${workspaceFolder}/frontend" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Instalar dependencias (todo)",
+      "dependsOn": ["Instalar dependencias del backend", "Instalar dependencias del frontend"],
+      "dependsOrder": "parallel",
+      "problemMatcher": []
+    },
+    {
+      "label": "Crear usuario",
+      "detail": "Pide usuario y rol; la contraseña se escribe en la terminal",
+      "type": "process",
+      "command": "${workspaceFolder}\\backend\\.venv\\Scripts\\python.exe",
+      "args": ["-m", "scripts.crear_usuario", "${input:usuario}", "${input:rol}"],
+      "options": { "cwd": "${workspaceFolder}/backend" },
+      "problemMatcher": [],
+      "presentation": { "panel": "dedicated", "focus": true }
+    }
+  ],
+  "inputs": [
+    {
+      "id": "usuario",
+      "type": "promptString",
+      "description": "Nombre del usuario nuevo"
+    },
+    {
+      "id": "rol",
+      "type": "pickString",
+      "description": "Rol del usuario",
+      "options": ["poy", "almacen", "dty", "twisting", "admin"],
+      "default": "poy"
+    }
+  ]
+}
